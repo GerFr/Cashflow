@@ -1,0 +1,329 @@
+@prefix cf:      <https://gerfr.github.io/Cashflow/ontology/cashflow#> .
+@prefix cfcat:   <https://gerfr.github.io/Cashflow/ontology/categories#> .
+@prefix ex:      <https://example.org/cashflow-demo/> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix prov:    <http://www.w3.org/ns/prov#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+
+# =============================================================================
+#  Example data (synthetic). Demonstrates:
+#   - accounts at a bank and at a payment service provider
+#   - salary, rent, a groceries purchase itemised by a receipt and split
+#   - a PayPal purchase funded from the bank (internal transfer + real expense)
+#   - a recurring subscription with an ML category assignment
+#   - generic tax tagging with a user-defined tax category
+#   - import provenance (file -> record -> transaction)
+#  Real exports use urn:uuid: IRIs; ex: is used here for readability.
+# =============================================================================
+
+# --- Parties ------------------------------------------------------------------
+
+ex:me a cf:Person ; rdfs:label "Me" .
+
+ex:sparkasse a cf:FinancialInstitution ;
+    rdfs:label "Sparkasse KölnBonn" ;
+    cf:bic "COLSDE33XXX" .
+
+ex:paypal a cf:FinancialInstitution ;
+    rdfs:label "PayPal (Europe) S.à r.l. et Cie, S.C.A." .
+
+ex:rewe a cf:Merchant ; rdfs:label "REWE" .
+ex:spotify a cf:Merchant ; rdfs:label "Spotify" .
+ex:pharmacy a cf:Merchant ; rdfs:label "Apotheke am Markt" .
+ex:employer a cf:Organization ; rdfs:label "ACME Software GmbH" .
+
+# --- Accounts -----------------------------------------------------------------
+
+ex:giro a cf:CheckingAccount ;
+    rdfs:label "Girokonto Sparkasse" ;
+    cf:iban "DE02370501980001802057" ;
+    cf:currency "EUR" ;
+    cf:heldAt ex:sparkasse ;
+    cf:accountHolder ex:me .
+
+ex:paypalAccount a cf:PaymentServiceAccount ;
+    rdfs:label "PayPal" ;
+    cf:currency "EUR" ;
+    cf:heldAt ex:paypal ;
+    cf:accountHolder ex:me .
+
+ex:balance-2026-10-06 a cf:BalanceObservation ;
+    cf:account ex:giro ;
+    cf:balanceDate "2026-10-06"^^xsd:date ;
+    cf:balance "2155.88"^^xsd:decimal ;
+    cf:currency "EUR" .
+
+# --- Provenance of the bank import ---------------------------------------------
+
+ex:connectorSparkasse a cf:Connector ;
+    rdfs:label "Sparkasse CSV-CAMT V2" ;
+    cf:connectorId "de.sparkasse.csv-camt-v2" ;
+    cf:connectorVersion "0.1.0" .
+
+ex:file-2026-10 a cf:SourceFile ;
+    cf:fileName "20261007-1802057-umsatz.CSV" ;
+    cf:mediaType "text/csv" ;
+    cf:sha256 "9f2c1e0b7a6d5c4b3a29180f7e6d5c4b3a29180f7e6d5c4b3a29180f7e6d5c4b" .
+
+ex:import-1 a cf:ImportRun ;
+    prov:used ex:file-2026-10 ;
+    prov:wasAssociatedWith ex:connectorSparkasse ;
+    prov:startedAtTime "2026-10-07T19:02:11Z"^^xsd:dateTime .
+
+ex:record-5 a cf:SourceRecord ;
+    cf:sourceFile ex:file-2026-10 ;
+    cf:rowNumber "5"^^xsd:positiveInteger ;
+    cf:rawContent "\"DE02370501980001802057\";\"03.10.26\";\"02.10.26\";\"KARTENZAHLUNG\";\"REWE SAGT DANKE 44112233//Musterstadt/DE 2026-10-02T18:31:04 Debitk.1 2029-12\";\"\";\"\";\"\";\"\";\"\";\"\";\"REWE Markt GmbH\";\"DE02700100800030876808\";\"PBNKDEFFXXX\";\"-26,09\";\"EUR\";\"Umsatz gebucht\"" .
+
+# --- Transactions ----------------------------------------------------------------
+
+ex:t-salary a cf:Transaction ;
+    cf:account ex:giro ;
+    cf:bookingDate "2026-09-30"^^xsd:date ;
+    cf:valueDate "2026-09-30"^^xsd:date ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "3200.00"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Credit ;
+    cf:status cf:Booked ;
+    cf:counterpartyName "ACME Software GmbH" ;
+    cf:counterpartyIban "DE89370400440532013000" ;
+    cf:counterparty ex:employer ;
+    cf:remittanceInformation "GEHALT SEPTEMBER 2026" ;
+    cf:bookingText "GUTSCHR. UEBERWEISUNG" ;
+    cf:category cfcat:Salary .
+
+ex:t-rent a cf:Transaction ;
+    cf:account ex:giro ;
+    cf:bookingDate "2026-10-01"^^xsd:date ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "950.00"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Debit ;
+    cf:status cf:Booked ;
+    cf:counterpartyName "Hausverwaltung Beispiel GmbH" ;
+    cf:remittanceInformation "MIETE OKTOBER WHG 3" ;
+    cf:bookingText "DAUERAUFTRAG" ;
+    cf:category cfcat:Rent .
+
+# Groceries purchase, itemised by a receipt and split into three categories.
+ex:t-rewe a cf:Transaction ;
+    cf:account ex:giro ;
+    cf:bookingDate "2026-10-03"^^xsd:date ;
+    cf:valueDate "2026-10-02"^^xsd:date ;
+    cf:transactionDateTime "2026-10-02T18:31:04"^^xsd:dateTime ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "26.09"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Debit ;
+    cf:status cf:Booked ;
+    cf:counterpartyName "REWE Markt GmbH" ;
+    cf:counterpartyIban "DE02700100800030876808" ;
+    cf:counterparty ex:rewe ;
+    cf:remittanceInformation "REWE SAGT DANKE 44112233//Musterstadt/DE 2026-10-02T18:31:04 Debitk.1 2029-12" ;
+    cf:bookingText "KARTENZAHLUNG" ;
+    cf:fingerprint "3b8e2f4c9a1d7e6b5c4a39281706f5e4d3c2b1a09f8e7d6c5b4a392817060f5e" ;
+    cf:documentedBy ex:receipt-rewe ;
+    cf:split ex:split-groceries , ex:split-drugstore , ex:split-household ;
+    prov:wasDerivedFrom ex:record-5 ;
+    prov:wasGeneratedBy ex:import-1 .
+
+ex:split-groceries a cf:Split ;
+    cf:splitOf ex:t-rewe ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "15.61"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:category cfcat:Groceries ;
+    cf:derivedFromLineItem ex:li-1 , ex:li-2 , ex:li-3 , ex:li-4 , ex:li-5 ;
+    cf:categoryAssignment [
+        a cf:CategoryAssignment ;
+        cf:assignedCategory cfcat:Groceries ;
+        cf:assignmentMethod cf:ByReceipt ;
+        cf:confidence "0.97"^^xsd:decimal ;
+        cf:explanation "Food items (7 % VAT) on REWE receipt."
+    ] .
+
+ex:split-drugstore a cf:Split ;
+    cf:splitOf ex:t-rewe ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "4.49"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:category cfcat:Drugstore ;
+    cf:derivedFromLineItem ex:li-6 .
+
+ex:split-household a cf:Split ;
+    cf:splitOf ex:t-rewe ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "5.99"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:category cfcat:Household ;
+    cf:derivedFromLineItem ex:li-7 .
+
+# PayPal purchase funded by the bank account:
+#  bank:   debit 19.99 to PayPal    -> internal transfer leg 1
+#  PayPal: credit 19.99 from bank   -> internal transfer leg 2
+#  PayPal: debit 19.99 to Spotify   -> the real expense
+ex:t-bank-to-paypal a cf:InternalTransfer ;
+    cf:account ex:giro ;
+    cf:bookingDate "2026-10-05"^^xsd:date ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "19.99"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Debit ;
+    cf:status cf:Booked ;
+    cf:counterpartyName "PayPal Europe S.a.r.l. et Cie S.C.A" ;
+    cf:counterpartyIban "LU89751000135104200E" ;
+    cf:remittanceInformation "1043918829461 PP.4711.PP . Spotify AB, Ihr Einkauf bei Spotify AB" ;
+    cf:endToEndId "1043918829461" ;
+    cf:category cfcat:OwnAccountTransfer ;
+    cf:transferCounterpart ex:t-paypal-funding .
+
+ex:t-paypal-funding a cf:InternalTransfer ;
+    cf:account ex:paypalAccount ;
+    cf:bookingDate "2026-10-04"^^xsd:date ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "19.99"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Credit ;
+    cf:status cf:Booked ;
+    cf:counterpartyName "Bankkonto" ;
+    cf:externalId "7KX12345AB678901C" ;
+    cf:category cfcat:OwnAccountTransfer ;
+    cf:transferCounterpart ex:t-bank-to-paypal .
+
+ex:t-spotify a cf:Transaction ;
+    cf:account ex:paypalAccount ;
+    cf:bookingDate "2026-10-04"^^xsd:date ;
+    cf:transactionDateTime "2026-10-04T09:12:55+02:00"^^xsd:dateTime ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "19.99"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Debit ;
+    cf:status cf:Booked ;
+    cf:counterpartyName "Spotify AB" ;
+    cf:counterparty ex:spotify ;
+    cf:externalId "9AB87654CD321098E" ;
+    cf:relatedExternalId "7KX12345AB678901C" ;
+    cf:recurringSeries ex:series-spotify ;
+    cf:category cfcat:Streaming ;
+    cf:categoryAssignment [
+        a cf:CategoryAssignment ;
+        cf:assignedCategory cfcat:Streaming ;
+        cf:assignmentMethod cf:ByModel ;
+        cf:confidence "0.93"^^xsd:decimal ;
+        cf:explanation "5 nearest labelled transactions (Spotify AB, monthly) are Streaming."
+    ] .
+
+ex:series-spotify a cf:RecurringSeries ;
+    rdfs:label "Spotify Family" ;
+    cf:periodicity "P1M"^^xsd:duration ;
+    cf:expectedAmount [ a cf:MonetaryAmount ; cf:value "19.99"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:nextExpectedDate "2026-11-04"^^xsd:date ;
+    cf:active true .
+
+# Pharmacy purchase, tagged with a user-defined tax category.
+ex:t-pharmacy a cf:Transaction ;
+    cf:account ex:giro ;
+    cf:bookingDate "2026-10-06"^^xsd:date ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "23.80"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Debit ;
+    cf:status cf:Booked ;
+    cf:counterpartyName "Apotheke am Markt" ;
+    cf:counterparty ex:pharmacy ;
+    cf:category cfcat:Pharmacy ;
+    cf:taxCategory ex:tax-medical ;
+    cf:taxYear "2026"^^xsd:gYear ;
+    cf:deductibleShare "1.0"^^xsd:decimal ;
+    cf:note "Prescription co-payment" .
+
+# --- Receipt ---------------------------------------------------------------------
+
+ex:photo-rewe a cf:SourceFile ;
+    cf:fileName "IMG_20261002_183455.jpg" ;
+    cf:mediaType "image/jpeg" ;
+    cf:sha256 "c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00" .
+
+ex:extraction-rewe a cf:ExtractionRun ;
+    prov:used ex:photo-rewe ;
+    cf:modelId "ocr/pp-ocrv5-mobile" , "extract/receipt-llm-small" ;
+    cf:processedOnDevice true ;
+    prov:startedAtTime "2026-10-02T18:35:10Z"^^xsd:dateTime .
+
+ex:receipt-rewe a cf:Receipt ;
+    cf:issuer ex:rewe ;
+    cf:issuerName "REWE Markt GmbH" ;
+    cf:issuerAddress "Hauptstr. 1, 12345 Musterstadt" ;
+    cf:issueDateTime "2026-10-02T18:31:00"^^xsd:dateTime ;
+    cf:paymentMethodText "girocard" ;
+    cf:totalAmount [ a cf:MonetaryAmount ; cf:value "26.09"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:lineItem ex:li-1 , ex:li-2 , ex:li-3 , ex:li-4 , ex:li-5 , ex:li-6 , ex:li-7 ;
+    cf:taxBreakdown
+        [ a cf:TaxBreakdown ; cf:vatRate "0.07"^^xsd:decimal ;
+          cf:netAmount   [ a cf:MonetaryAmount ; cf:value "14.59"^^xsd:decimal ; cf:currency "EUR" ] ;
+          cf:taxAmount   [ a cf:MonetaryAmount ; cf:value "1.02"^^xsd:decimal ;  cf:currency "EUR" ] ;
+          cf:grossAmount [ a cf:MonetaryAmount ; cf:value "15.61"^^xsd:decimal ; cf:currency "EUR" ] ] ,
+        [ a cf:TaxBreakdown ; cf:vatRate "0.19"^^xsd:decimal ;
+          cf:netAmount   [ a cf:MonetaryAmount ; cf:value "8.81"^^xsd:decimal ;  cf:currency "EUR" ] ;
+          cf:taxAmount   [ a cf:MonetaryAmount ; cf:value "1.67"^^xsd:decimal ;  cf:currency "EUR" ] ;
+          cf:grossAmount [ a cf:MonetaryAmount ; cf:value "10.48"^^xsd:decimal ; cf:currency "EUR" ] ] ;
+    prov:wasDerivedFrom ex:photo-rewe ;
+    prov:wasGeneratedBy ex:extraction-rewe .
+
+ex:li-1 a cf:LineItem ;
+    cf:position "1"^^xsd:positiveInteger ;
+    cf:description "BIO VOLLM. 3,8%" ;
+    cf:normalizedDescription "Organic whole milk 3.8 % 1 l" ;
+    cf:product ex:product-milk ;
+    cf:quantity "2"^^xsd:decimal ; cf:unit "H87" ;
+    cf:unitPrice [ a cf:MonetaryAmount ; cf:value "1.19"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:lineTotal [ a cf:MonetaryAmount ; cf:value "2.38"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:vatRate "0.07"^^xsd:decimal ;
+    cf:category cfcat:Groceries .
+
+ex:li-2 a cf:LineItem ;
+    cf:position "2"^^xsd:positiveInteger ;
+    cf:description "DINKELVOLLKORNBROT" ;
+    cf:normalizedDescription "Spelt wholemeal bread" ;
+    cf:lineTotal [ a cf:MonetaryAmount ; cf:value "3.29"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:vatRate "0.07"^^xsd:decimal ;
+    cf:category cfcat:Groceries .
+
+ex:li-3 a cf:LineItem ;
+    cf:position "3"^^xsd:positiveInteger ;
+    cf:description "KAFFEE CREMA 1KG" ;
+    cf:normalizedDescription "Coffee beans crema 1 kg" ;
+    cf:lineTotal [ a cf:MonetaryAmount ; cf:value "8.99"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:vatRate "0.07"^^xsd:decimal ;
+    cf:category cfcat:Groceries .
+
+ex:li-4 a cf:LineItem ;
+    cf:position "4"^^xsd:positiveInteger ;
+    cf:description "BANANEN" ;
+    cf:normalizedDescription "Bananas" ;
+    cf:quantity "1.234"^^xsd:decimal ; cf:unit "KGM" ;
+    cf:unitPrice [ a cf:MonetaryAmount ; cf:value "1.50"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:lineTotal [ a cf:MonetaryAmount ; cf:value "1.85"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:vatRate "0.07"^^xsd:decimal ;
+    cf:category cfcat:Groceries .
+
+ex:li-5 a cf:DeductionLine ;
+    cf:position "5"^^xsd:positiveInteger ;
+    cf:description "COUPON 10% KAFFEE" ;
+    cf:lineTotal [ a cf:MonetaryAmount ; cf:value "0.90"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:vatRate "0.07"^^xsd:decimal ;
+    cf:category cfcat:Groceries .
+
+ex:li-6 a cf:LineItem ;
+    cf:position "6"^^xsd:positiveInteger ;
+    cf:description "ZAHNCREME SENSITIV" ;
+    cf:normalizedDescription "Toothpaste sensitive" ;
+    cf:lineTotal [ a cf:MonetaryAmount ; cf:value "4.49"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:vatRate "0.19"^^xsd:decimal ;
+    cf:category cfcat:Drugstore .
+
+ex:li-7 a cf:LineItem ;
+    cf:position "7"^^xsd:positiveInteger ;
+    cf:description "COLORWASCHMITTEL" ;
+    cf:normalizedDescription "Colour laundry detergent" ;
+    cf:lineTotal [ a cf:MonetaryAmount ; cf:value "5.99"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:vatRate "0.19"^^xsd:decimal ;
+    cf:category cfcat:Household .
+
+ex:product-milk a cf:Product ;
+    rdfs:label "Organic whole milk 3.8 % 1 l" .
+
+# --- User-defined tax categories (generic, no jurisdiction rules) -----------------
+
+ex:my-tax-scheme a cf:TaxCategoryScheme ;
+    skos:prefLabel "My tax categories"@en .
+
+ex:tax-medical a cf:TaxCategory ;
+    skos:inScheme ex:my-tax-scheme ;
+    skos:prefLabel "Medical expenses"@en , "Krankheitskosten"@de .
+
+ex:tax-work-equipment a cf:TaxCategory ;
+    skos:inScheme ex:my-tax-scheme ;
+    skos:prefLabel "Work equipment"@en , "Arbeitsmittel"@de .

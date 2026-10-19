@@ -1,1 +1,9 @@
 * text=auto eol=lf
+
+# Connector fixtures must stay byte-exact (encodings, BOMs, CRLF line endings
+# are part of what is being tested).
+connectors/fixtures/**/input.* -text
+
+*.png binary
+*.jpg binary
+*.pdf binary

@@ -1,0 +1,26 @@
+# Generic tax-year report (TAX-03): totals per user-defined tax category,
+# weighted by the deductible share, with the number of items lacking a
+# linked document (receipt/invoice).
+
+PREFIX cf:   <https://gerfr.github.io/Cashflow/ontology/cashflow#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?taxCategory (SAMPLE(?label) AS ?name)
+       (SUM(?v) AS ?gross)
+       (SUM(?v * ?share) AS ?attributable)
+       (COUNT(?item) AS ?items)
+       (SUM(?undocumented) AS ?itemsWithoutDocument)
+WHERE {
+  VALUES ?year { "2026"^^xsd:gYear }
+  ?item cf:taxCategory ?taxCategory ;
+        cf:taxYear ?year ;
+        cf:amount/cf:value ?v .
+  OPTIONAL { ?item cf:deductibleShare ?s }
+  BIND (COALESCE(?s, 1.0) AS ?share)
+  ?taxCategory skos:prefLabel ?label .
+  FILTER (lang(?label) = "en")
+  BIND (IF(EXISTS { ?item cf:documentedBy ?doc } || EXISTS { ?item cf:splitOf/cf:documentedBy ?doc2 }, 0, 1) AS ?undocumented)
+}
+GROUP BY ?taxCategory
+ORDER BY ?name

@@ -141,7 +141,7 @@ It borrows the file bytes without copying, returns owned records or a typed erro
 * The Book, chapters 11–17: testing, closures and iterators, smart pointers, concurrency basics, trait objects.
 * **Command-Line Rust** (Ken Youens-Clark, O'Reilly): builds small CLI tools test-first, which is exactly the style of the M1 command line.
 * Crates to get to know: `serde` (serialisation), `csv`, `clap` (CLI arguments), `thiserror`/`anyhow` (errors).
-* **Project exercise:** a tiny `cfparse` CLI that reads the Sparkasse sample export (it comes with the connector language in the next PR) with `csv` + `serde` and prints the same JSON as the golden `expected.json` file. If the output matches, you have built the core of milestone M1.
+* **Project exercise:** a tiny `cfparse` CLI that reads the Sparkasse sample export ([`connectors/fixtures/de.sparkasse.csv-camt-v2/basic/input.csv`](../../connectors/fixtures/de.sparkasse.csv-camt-v2/basic/input.csv), Windows-1252 encoded) with `csv` + `serde` and prints the same JSON as the golden [`expected.json`](../../connectors/fixtures/de.sparkasse.csv-camt-v2/basic/expected.json). If the output matches, you have built the core of milestone M1.
 
 ### Stage 3 — Idiomatic and robust Rust (alongside M1)
 
@@ -185,14 +185,14 @@ Videos: Jon Gjengset's *Crust of Rust* series on YouTube explains one concept pe
 | Property tests and fuzzers for parsers | Bank files are untrusted input; random inputs find the edge cases humans miss. |
 | `cargo clippy -- -D warnings` in CI | Every warning is treated as an error, keeping the code idiomatic. |
 
-The reasoning behind the larger choices (Rust + Tauri, SQLite, peer-to-peer sync, on-device AI) is recorded in the architecture decision records, which follow in the next PR.
+The reasoning behind the larger choices (Rust + Tauri, SQLite, peer-to-peer sync, on-device AI) is recorded in the [architecture decision records](../adr/).
 
 ---
 
 ## 5. Practising on this repository
 
-1. **Port the connector reference interpreter** (Python, next PR) to Rust. The golden `expected.json` files tell you exactly when you are right. This is the main M1 deliverable, so learning and building coincide.
-2. **Implement the duplicate fingerprint** (SHA-256 + UUIDv8) and compare it with the Python output.
+1. **Port the connector reference interpreter** ([`tools/connector_ref.py`](../../tools/connector_ref.py)) to Rust. The golden `expected.json` files tell you exactly when you are right. This is the main M1 deliverable, so learning and building coincide.
+2. **Implement the duplicate fingerprint** (SHA-256 + UUIDv8, `fingerprint_base` and `uuid8` in the reference interpreter) and compare it with the Python output.
 3. **Write a fuzz target** for your amount parser and let it run for an hour.
 4. **Spike SP-7:** a tiny Tauri app where a Rust command returns category totals and Svelte + D3 draws the bubbles.
 

@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=../schema/connector.schema.json
+dsl_version: "0.1"
+id: de.dkb.csv-2023
+name: DKB Girokonto – CSV export (layout since 2023)
+version: 0.1.0
+status: draft            # layout written from memory of the post-2023 web banking export; verify against a real export
+verified_against: null
+maintainers: []
+notes: >
+  The export starts with a preamble (account, balance) before the header row.
+  Payer and payee are separate columns; which one is the counterparty depends
+  on the direction ("Umsatztyp": Ausgang/Eingang). The IBAN column holds the
+  counterparty IBAN.
+
+institution:
+  name: Deutsche Kreditbank AG
+  country: DE
+  bic: BYLADEM1001
+  website: https://www.dkb.de
+account_kind: CheckingAccount
+
+input:
+  type: csv
+  encoding: utf-8-sig
+  delimiter: ";"
+  quote: '"'
+  header:
+    find_row_containing: ["Buchungsdatum", "Wertstellung", "Betrag (€)"]
+  preamble:
+    account_iban:
+      row_matches: "^(Girokonto|Konto)"
+      cell: 1
+      regex: "([A-Z]{2}[0-9]{2}[A-Z0-9]{11,30})"
+      transform: [remove_spaces, upper]
+    closing_balance:
+      row_matches: "^Kontostand vom"
+      cell: 1
+      type: decimal
+      transform: [strip_currency_symbol]
+    closing_balance_date:
+      row_matches: "^Kontostand vom"
+      cell: 0
+      regex: "([0-9]{2}\\.[0-9]{2}\\.[0-9]{4})"
+      type: date
+
+locale:
+  decimal_separator: ","
+  thousands_separator: "."
+  date_formats: ["%d.%m.%y", "%d.%m.%Y"]
+
+detect:
+  required_columns:
+    - Buchungsdatum
+    - Wertstellung
+    - Status
+    - Zahlungspflichtige*r
+    - Zahlungsempfänger*in
+    - Verwendungszweck
+    - Umsatztyp
+    - Betrag (€)
+
+fields:
+  account_iban:
+    from_preamble: account_iban
+  booking_date:
+    column: Buchungsdatum
+    type: date
+  value_date:
+    column: Wertstellung
+    type: date
+  amount:
+    column: Betrag (€)
+    type: decimal
+  currency:
+    const: EUR
+  status:
+    column: Status
+    map:
+      Gebucht: booked
+      Vorgemerkt: pending
+  counterparty_name:
+    cases:
+      - when: { column: Umsatztyp, equals: Ausgang }
+        column: Zahlungsempfänger*in
+        transform: [collapse_whitespace]
+      - column: Zahlungspflichtige*r
+        transform: [collapse_whitespace]
+  counterparty_iban:
+    column: IBAN
+    transform: [remove_spaces, upper]
+  remittance_information:
+    column: Verwendungszweck
+    transform: [collapse_whitespace]
+  booking_text:
+    column: Umsatztyp
+  creditor_id:
+    column: Gläubiger-ID
+    transform: [trim]
+  mandate_reference:
+    column: Mandatsreferenz
+    transform: [trim]
+  end_to_end_id:
+    column: Kundenreferenz
+    transform: [trim]
+    null_values: ["NOTPROVIDED"]
+
+direction:
+  mode: signed_amount

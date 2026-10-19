@@ -1,0 +1,536 @@
+@prefix cf:      <https://gerfr.github.io/Cashflow/ontology/cashflow#> .
+@prefix cfsh:    <https://gerfr.github.io/Cashflow/ontology/shapes#> .
+@prefix sh:      <http://www.w3.org/ns/shacl#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix prov:    <http://www.w3.org/ns/prov#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+# =============================================================================
+#  SHACL shapes for Cashflow data.
+#
+#  Every RDF export of the app MUST conform to these shapes (EXP-01).
+#  Severity sh:Violation = data is wrong; sh:Warning = data is suspicious
+#  (e.g. receipt lines do not add up) and is surfaced to the user for review.
+#
+#  Validate with:   python tools/validate.py   (uses pySHACL)
+# =============================================================================
+
+<https://gerfr.github.io/Cashflow/ontology/shapes>
+    a owl:Ontology ;
+    dcterms:title "Cashflow SHACL shapes"@en ;
+    owl:versionInfo "0.1.0" ;
+    sh:declare
+        [ sh:prefix "cf" ;   sh:namespace "https://gerfr.github.io/Cashflow/ontology/cashflow#"^^xsd:anyURI ] ,
+        [ sh:prefix "skos" ; sh:namespace "http://www.w3.org/2004/02/skos/core#"^^xsd:anyURI ] ,
+        [ sh:prefix "rdf" ;  sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ] .
+
+# --- Reusable property patterns ----------------------------------------------
+
+cfsh:MonetaryAmountShape
+    a sh:NodeShape ;
+    sh:targetClass cf:MonetaryAmount ;
+    sh:property [
+        sh:path cf:value ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:message "A monetary amount needs exactly one xsd:decimal value." ;
+    ] ;
+    sh:property [
+        sh:path cf:currency ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[A-Z]{3}$" ;
+        sh:message "Currency must be an ISO 4217 alphabetic code such as EUR." ;
+    ] .
+
+# Non-negative amounts for everything that carries cf:direction separately.
+cfsh:NonNegativeAmount
+    a sh:PropertyShape ;
+    sh:path ( cf:amount cf:value ) ;
+    sh:minInclusive 0 ;
+    sh:message "Amounts are stored as non-negative values; the sign is expressed by cf:direction." .
+
+# --- Accounts ----------------------------------------------------------------
+
+cfsh:AccountShape
+    a sh:NodeShape ;
+    sh:targetClass cf:Account ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        sh:message "Every account needs a display name (rdfs:label)." ;
+    ] ;
+    sh:property [
+        sh:path cf:iban ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$" ;
+        sh:message "IBAN must be in electronic format (upper case, no spaces)." ;
+    ] ;
+    sh:property [
+        sh:path cf:currency ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^[A-Z]{3}$" ;
+        sh:message "Every account needs exactly one ISO 4217 account currency." ;
+    ] ;
+    sh:property [
+        sh:path cf:heldAt ;
+        sh:maxCount 1 ;
+        sh:class cf:FinancialInstitution ;
+    ] ;
+    sh:property [
+        sh:path cf:maskedCardNumber ;
+        sh:maxCount 1 ;
+        sh:pattern "^[* ]*[0-9]{0,4}$" ;
+        sh:message "Card numbers must be masked; at most the last four digits may be stored." ;
+    ] .
+
+# --- Transactions ------------------------------------------------------------
+
+cfsh:TransactionShape
+    a sh:NodeShape ;
+    sh:targetClass cf:Transaction ;
+    sh:property [
+        sh:path cf:account ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cf:Account ;
+        sh:message "A transaction is booked on exactly one of the user's accounts." ;
+    ] ;
+    sh:property [
+        sh:path cf:bookingDate ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:date ;
+    ] ;
+    sh:property [
+        sh:path cf:valueDate ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:date ;
+    ] ;
+    sh:property [
+        sh:path cf:transactionDateTime ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+    ] ;
+    sh:property [
+        sh:path cf:amount ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cf:MonetaryAmount ;
+    ] ;
+    sh:property cfsh:NonNegativeAmount ;
+    sh:property [
+        sh:path cf:direction ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( cf:Debit cf:Credit ) ;
+    ] ;
+    sh:property [
+        sh:path cf:status ;
+        sh:maxCount 1 ;
+        sh:in ( cf:Booked cf:Pending ) ;
+    ] ;
+    sh:property [
+        sh:path cf:counterpartyIban ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$" ;
+        sh:message "Counterparty IBAN must be in electronic format (upper case, no spaces)." ;
+    ] ;
+    sh:property [
+        sh:path cf:category ;
+        sh:maxCount 1 ;
+        sh:class cf:Category ;
+    ] ;
+    sh:property [
+        sh:path cf:fingerprint ;
+        sh:maxCount 1 ;
+        sh:pattern "^[0-9a-f]{64}$" ;
+        sh:message "Fingerprint must be a lower-case SHA-256 hex digest." ;
+    ] ;
+    sh:property [
+        sh:path cf:transferCounterpart ;
+        sh:maxCount 1 ;
+        sh:class cf:Transaction ;
+    ] ;
+    sh:property [
+        sh:path cf:split ;
+        sh:class cf:Split ;
+    ] ;
+    sh:property [
+        sh:path cf:documentedBy ;
+        sh:class cf:CommercialDocument ;
+    ] ;
+    sh:property [
+        sh:path cf:merchantCategoryCode ;
+        sh:maxCount 1 ;
+        sh:pattern "^[0-9]{4}$" ;
+    ] ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Split amounts sum to {?splitSum} but the transaction amount is {?total}." ;
+        sh:prefixes <https://gerfr.github.io/Cashflow/ontology/shapes> ;
+        sh:select """
+            SELECT $this ?total (SUM(?v) AS ?splitSum)
+            WHERE {
+                $this cf:amount ?ta .
+                ?ta cf:value ?total .
+                $this cf:split ?s .
+                ?s cf:amount ?sa .
+                ?sa cf:value ?v .
+            }
+            GROUP BY $this ?total
+            HAVING (ABS(?total - SUM(?v)) > 0.005)
+        """ ;
+    ] .
+
+cfsh:InternalTransferShape
+    a sh:NodeShape ;
+    sh:targetClass cf:InternalTransfer ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Transfer legs must be on different accounts, in opposite directions and of equal amount." ;
+        sh:prefixes <https://gerfr.github.io/Cashflow/ontology/shapes> ;
+        sh:select """
+            SELECT $this ?other
+            WHERE {
+                $this cf:transferCounterpart ?other ;
+                      cf:account ?a1 ; cf:direction ?d1 ; cf:amount ?m1 .
+                ?m1 cf:value ?v1 ; cf:currency ?c1 .
+                ?other cf:account ?a2 ; cf:direction ?d2 ; cf:amount ?m2 .
+                ?m2 cf:value ?v2 ; cf:currency ?c2 .
+                FILTER (?a1 = ?a2 || ?d1 = ?d2 || ?c1 != ?c2 || ABS(?v1 - ?v2) > 0.005)
+            }
+        """ ;
+    ] .
+
+cfsh:SplitShape
+    a sh:NodeShape ;
+    sh:targetClass cf:Split ;
+    sh:property [
+        sh:path cf:amount ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cf:MonetaryAmount ;
+    ] ;
+    sh:property cfsh:NonNegativeAmount ;
+    sh:property [
+        sh:path cf:category ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cf:Category ;
+        sh:message "Every split needs exactly one category." ;
+    ] ;
+    sh:property [
+        sh:path cf:splitOf ;
+        sh:maxCount 1 ;
+        sh:class cf:Transaction ;
+    ] .
+
+# --- Shared constraints on categorizable items --------------------------------
+
+cfsh:CategorizableShape
+    a sh:NodeShape ;
+    sh:targetClass cf:Transaction , cf:Split , cf:LineItem ;
+    sh:property [
+        sh:path cf:taxCategory ;
+        sh:class cf:TaxCategory ;
+    ] ;
+    sh:property [
+        sh:path cf:taxYear ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:gYear ;
+    ] ;
+    sh:property [
+        sh:path cf:deductibleShare ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ; sh:maxInclusive 1 ;
+        sh:message "Deductible share is a fraction between 0 and 1." ;
+    ] ;
+    sh:property [
+        sh:path cf:categoryAssignment ;
+        sh:class cf:CategoryAssignment ;
+    ] .
+
+cfsh:CategoryAssignmentShape
+    a sh:NodeShape ;
+    sh:targetClass cf:CategoryAssignment ;
+    sh:property [
+        sh:path cf:assignedCategory ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cf:Category ;
+    ] ;
+    sh:property [
+        sh:path cf:assignmentMethod ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( cf:ByUser cf:ByRule cf:ByModel cf:ByReceipt cf:BySource ) ;
+    ] ;
+    sh:property [
+        sh:path cf:confidence ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ; sh:maxInclusive 1 ;
+    ] .
+
+# --- Categories ----------------------------------------------------------------
+
+cfsh:CategoryShape
+    a sh:NodeShape ;
+    sh:targetClass cf:Category ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:uniqueLang true ;
+        sh:message "Categories need preferred labels, at most one per language." ;
+    ] ;
+    sh:property [
+        sh:path skos:notation ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^[A-Z][A-Z0-9_]*(\\.[A-Z][A-Z0-9_]*)*$" ;
+        sh:message "Every category needs one stable notation like FOOD.GROCERIES." ;
+    ] ;
+    sh:property [
+        sh:path skos:inScheme ;
+        sh:minCount 1 ;
+        sh:class cf:CategoryScheme ;
+    ] ;
+    sh:property [
+        sh:path skos:broader ;
+        sh:maxCount 1 ;
+        sh:class cf:Category ;
+        sh:message "Categories form a tree: at most one broader category." ;
+    ] ;
+    sh:property [
+        sh:path cf:categoryKind ;
+        sh:maxCount 1 ;
+        sh:in ( cf:ExpenseKind cf:IncomeKind cf:SavingsKind cf:TransferKind ) ;
+    ] .
+
+cfsh:TopCategoryShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf skos:topConceptOf ;
+    sh:property [
+        sh:path cf:categoryKind ;
+        sh:minCount 1 ;
+        sh:message "Top-level categories must declare a cf:categoryKind." ;
+    ] .
+
+# --- Documents & line items ---------------------------------------------------
+
+cfsh:CommercialDocumentShape
+    a sh:NodeShape ;
+    sh:targetClass cf:CommercialDocument ;
+    sh:property [
+        sh:path cf:issueDate ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:date ;
+    ] ;
+    sh:property [
+        sh:path cf:issueDateTime ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:dateTime ;
+    ] ;
+    sh:property [
+        sh:path cf:totalAmount ;
+        sh:maxCount 1 ;
+        sh:class cf:MonetaryAmount ;
+    ] ;
+    sh:property [
+        sh:path cf:lineItem ;
+        sh:class cf:LineItem ;
+    ] ;
+    sh:property [
+        sh:path cf:taxBreakdown ;
+        sh:class cf:TaxBreakdown ;
+    ] .
+
+# Arithmetic plausibility of extracted documents: warnings, shown in the review UI.
+cfsh:CommercialDocumentConsistencyShape
+    a sh:NodeShape ;
+    sh:targetClass cf:CommercialDocument ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "Line items sum to {?lineSum} but the document total is {?total}; please review the extraction." ;
+        sh:prefixes <https://gerfr.github.io/Cashflow/ontology/shapes> ;
+        sh:select """
+            SELECT $this ?total (SUM(?signed) AS ?lineSum)
+            WHERE {
+                $this cf:totalAmount ?ta .
+                ?ta cf:value ?total .
+                $this cf:lineItem ?li .
+                ?li cf:lineTotal ?lt .
+                ?lt cf:value ?v .
+                BIND (IF(EXISTS { ?li rdf:type cf:DeductionLine }, -?v, ?v) AS ?signed)
+            }
+            GROUP BY $this ?total
+            HAVING (ABS(?total - SUM(?signed)) > 0.005)
+        """ ;
+    ] ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "VAT breakdown gross amounts sum to {?grossSum} but the document total is {?total}." ;
+        sh:prefixes <https://gerfr.github.io/Cashflow/ontology/shapes> ;
+        sh:select """
+            SELECT $this ?total (SUM(?g) AS ?grossSum)
+            WHERE {
+                $this cf:totalAmount ?ta .
+                ?ta cf:value ?total .
+                $this cf:taxBreakdown ?tb .
+                ?tb cf:grossAmount ?ga .
+                ?ga cf:value ?g .
+            }
+            GROUP BY $this ?total
+            HAVING (ABS(?total - SUM(?g)) > 0.005)
+        """ ;
+    ] .
+
+cfsh:LineItemShape
+    a sh:NodeShape ;
+    sh:targetClass cf:LineItem ;
+    sh:property [
+        sh:path cf:description ;
+        sh:minCount 1 ;
+        sh:datatype xsd:string ;
+    ] ;
+    sh:property [
+        sh:path cf:lineTotal ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cf:MonetaryAmount ;
+    ] ;
+    sh:property [
+        sh:path ( cf:lineTotal cf:value ) ;
+        sh:minInclusive 0 ;
+        sh:message "Line totals are positive; deductions are typed cf:DeductionLine." ;
+    ] ;
+    sh:property [
+        sh:path cf:quantity ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:minExclusive 0 ;
+    ] ;
+    sh:property [
+        sh:path cf:vatRate ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:minInclusive 0 ; sh:maxExclusive 1 ;
+    ] ;
+    sh:property [
+        sh:path cf:position ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:positiveInteger ;
+    ] ;
+    sh:property [
+        sh:path cf:category ;
+        sh:maxCount 1 ;
+        sh:class cf:Category ;
+    ] .
+
+cfsh:TaxBreakdownShape
+    a sh:NodeShape ;
+    sh:targetClass cf:TaxBreakdown ;
+    sh:property [ sh:path cf:vatRate ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:decimal ] ;
+    sh:property [ sh:path cf:grossAmount ; sh:minCount 1 ; sh:maxCount 1 ; sh:class cf:MonetaryAmount ] ;
+    sh:property [ sh:path cf:netAmount ; sh:maxCount 1 ; sh:class cf:MonetaryAmount ] ;
+    sh:property [ sh:path cf:taxAmount ; sh:maxCount 1 ; sh:class cf:MonetaryAmount ] .
+
+# --- Tax -----------------------------------------------------------------------
+
+cfsh:TaxCategoryShape
+    a sh:NodeShape ;
+    sh:targetClass cf:TaxCategory ;
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+        sh:uniqueLang true ;
+    ] ;
+    sh:property [
+        sh:path skos:inScheme ;
+        sh:minCount 1 ;
+        sh:class cf:TaxCategoryScheme ;
+    ] .
+
+cfsh:TaxCategorySchemeShape
+    a sh:NodeShape ;
+    sh:targetClass cf:TaxCategoryScheme ;
+    sh:property [
+        sh:path cf:jurisdiction ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z]{2}(-[A-Z0-9]{1,3})?$" ;
+        sh:message "Jurisdiction is an ISO 3166-1 alpha-2 code, optionally with an ISO 3166-2 subdivision." ;
+    ] .
+
+# --- Provenance ------------------------------------------------------------------
+
+cfsh:SourceFileShape
+    a sh:NodeShape ;
+    sh:targetClass cf:SourceFile ;
+    sh:property [
+        sh:path cf:sha256 ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^[0-9a-f]{64}$" ;
+    ] ;
+    sh:property [
+        sh:path cf:mediaType ;
+        sh:maxCount 1 ;
+        sh:pattern "^[a-z]+/[a-z0-9.+-]+$" ;
+    ] .
+
+cfsh:SourceRecordShape
+    a sh:NodeShape ;
+    sh:targetClass cf:SourceRecord ;
+    sh:property [
+        sh:path cf:sourceFile ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cf:SourceFile ;
+    ] ;
+    sh:property [
+        sh:path cf:rowNumber ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:positiveInteger ;
+    ] .
+
+cfsh:ImportRunShape
+    a sh:NodeShape ;
+    sh:targetClass cf:ImportRun ;
+    sh:property [
+        sh:path prov:used ;
+        sh:minCount 1 ;
+        sh:class cf:SourceFile ;
+    ] ;
+    sh:property [
+        sh:path prov:wasAssociatedWith ;
+        sh:minCount 1 ;
+        sh:class cf:Connector ;
+    ] .
+
+cfsh:ConnectorShape
+    a sh:NodeShape ;
+    sh:targetClass cf:Connector ;
+    sh:property [
+        sh:path cf:connectorId ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^[a-z0-9]+(\\.[a-z0-9-]+)+$" ;
+    ] ;
+    sh:property [
+        sh:path cf:connectorVersion ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:pattern "^[0-9]+\\.[0-9]+\\.[0-9]+([-+].*)?$" ;
+    ] .
+
+# --- Analytics helpers -------------------------------------------------------------
+
+cfsh:RecurringSeriesShape
+    a sh:NodeShape ;
+    sh:targetClass cf:RecurringSeries ;
+    sh:property [ sh:path cf:periodicity ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:duration ] ;
+    sh:property [ sh:path cf:expectedAmount ; sh:maxCount 1 ; sh:class cf:MonetaryAmount ] ;
+    sh:property [ sh:path cf:nextExpectedDate ; sh:maxCount 1 ; sh:datatype xsd:date ] .
+
+cfsh:BalanceObservationShape
+    a sh:NodeShape ;
+    sh:targetClass cf:BalanceObservation ;
+    sh:property [ sh:path cf:account ; sh:minCount 1 ; sh:maxCount 1 ; sh:class cf:Account ] ;
+    sh:property [ sh:path cf:balanceDate ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:date ] ;
+    sh:property [ sh:path cf:balance ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:decimal ] ;
+    sh:property [ sh:path cf:currency ; sh:minCount 1 ; sh:maxCount 1 ; sh:pattern "^[A-Z]{3}$" ] .

@@ -1,0 +1,6 @@
+# Validation tooling for the ontology and connector definitions (CI + local).
+# Install: uv pip install -r tools/requirements.txt   (or: pip install -r ...)
+rdflib==7.6.0
+pyshacl==0.40.1
+PyYAML==6.0.3
+jsonschema==4.26.0
