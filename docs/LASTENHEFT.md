@@ -206,6 +206,7 @@ AI-based categorisation uses two kinds of models:
 | LF-SYN-04 | Optional **sync over the internet** (relay, can be self-hosted). | Works between different networks when enabled; off by default. | S | M5 | ⚪ |
 | LF-SYN-05 | **No data loss or duplicates** when both devices change or import data at the same time. | Importing the same file on both devices yields each transaction once. | M | M5 | ⚪ |
 | LF-SYN-06 | **Receipt images** are synced; the phone may keep only thumbnails of older ones. | Receipts captured on the phone open on the laptop. | M | M5 | ⚪ |
+| LF-SYN-07 | **More than two devices**, later a household mode with shared accounts. | A third device joins the sync. | C | post | ⚪ |
 
 ### 4.8 Privacy & security (`PRV`)
 
@@ -294,7 +295,7 @@ Details, deliverables and exit criteria: [ROADMAP.md](ROADMAP.md).
 | **M6** | Receipts v1 | REC-01…05 | v0.6 |
 | **M7** | Receipts v2 & taxes | REC-06…08, TAX-01…05, ANA-13 | v0.7 |
 | **M8** | Hardening & 1.0 | ANA-14, APP-07, PLT-03 | **v1.0** |
-| post | After 1.0 | IMP-18, ANA-15, EXP-03 | — |
+| post | After 1.0 | IMP-18, ANA-15, SYN-07, EXP-03 | — |
 
 (Feature IDs abbreviated without the `LF-` prefix.)
 

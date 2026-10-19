@@ -264,9 +264,9 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 
 ## After 1.0
 
-**Delivers:** LF-IMP-18 · LF-ANA-15 · LF-EXP-03.
+**Delivers:** LF-IMP-18 · LF-ANA-15 · LF-SYN-07 · LF-EXP-03.
 
-Live bank access (FinTS/PSD2), budgets, plain-text accounting exports; later possibly household mode and community tax rule packs.
+Live bank access (FinTS/PSD2), budgets, more devices and a household mode, plain-text accounting exports; possibly community tax rule packs.
 
 ---
 
@@ -282,4 +282,4 @@ Live bank access (FinTS/PSD2), budgets, plain-text accounting exports; later pos
 | M6 | LF-REC-01, LF-REC-02, LF-REC-03, LF-REC-04, LF-REC-05 |
 | M7 | LF-REC-06, LF-REC-07, LF-REC-08, LF-TAX-01, LF-TAX-02, LF-TAX-03, LF-TAX-04, LF-TAX-05, LF-ANA-13 |
 | M8 | LF-ANA-14, LF-APP-07, LF-PLT-03 |
-| post | LF-IMP-18, LF-ANA-15, LF-EXP-03 |
+| post | LF-IMP-18, LF-ANA-15, LF-SYN-07, LF-EXP-03 |
