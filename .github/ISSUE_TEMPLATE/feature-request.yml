@@ -1,0 +1,58 @@
+name: Feature request
+description: Propose a new feature or a change to an existing one in the Lastenheft.
+title: "[feature] <short description>"
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Features are tracked in `docs/LASTENHEFT.md`. Describe *what* you want and *why*;
+        the *how* is worked out in the Pflichtenheft.
+        **Never paste real financial data.**
+  - type: input
+    id: related
+    attributes:
+      label: Related Lastenheft feature(s)
+      description: Existing IDs this extends or changes, or "new".
+      placeholder: "e.g. LF-ANA-01, or new"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Import & connectors (IMP)
+        - Data model & ontology (DAT)
+        - Categorisation (CAT)
+        - Analytics & visualisation (ANA)
+        - Receipts (REC)
+        - Taxes (TAX)
+        - Devices & sync (SYN)
+        - Privacy & security (PRV)
+        - Export (EXP)
+        - App & usability (APP)
+        - Platforms & distribution (PLT)
+    validations:
+      required: true
+  - type: textarea
+    id: need
+    attributes:
+      label: What do you want to be able to do, and why?
+      placeholder: "As a user I want … so that …"
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: How would we know it is done? (acceptance criterion)
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Suggested priority
+      options:
+        - Must
+        - Should
+        - Could
