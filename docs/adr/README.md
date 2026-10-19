@@ -11,6 +11,7 @@ Architecturally significant decisions are recorded here in the [MADR](https://ad
 | [0005](0005-p2p-sync.md) | Peer-to-peer sync with iroh and an HLC operation log | proposed |
 | [0006](0006-on-device-ml.md) | On-device ML first, opt-in third-party processing | proposed |
 | [0007](0007-licensing.md) | Licensing: AGPL-3.0-or-later for code, CC BY 4.0 for the ontology | proposed |
+| [0008](0008-knowledge-graph-manager-backend.md) | Optional user-operated Knowledge Graph Manager backend (Jena + Spring Boot), low priority, post-1.0 | proposed |
 
 ADRs stay *proposed* until the M0 spikes have confirmed or refuted their assumptions ([ROADMAP](../ROADMAP.md#m0--planning--foundations-)).
 

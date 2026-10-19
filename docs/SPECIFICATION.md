@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Document** | Pflichtenheft / Software Requirements Specification (SRS) |
-| **Version** | 0.1.0 — draft for review |
+| **Version** | 0.2.0 — draft for review |
 | **Date** | 2026-10-19 |
 | **Milestone** | M0 (Foundations) — see [ROADMAP.md](ROADMAP.md) |
 | **Answers** | [Lastenheft](LASTENHEFT.md) (features `LF-*`, tracked there) |
@@ -47,7 +47,7 @@ This Pflichtenheft describes **how** Cashflow will be built. It answers the [Las
 | `CAT` | Enrichment & categorisation | `EXP` | Export, backup, interoperability |
 | `ANA` | Analytics & visualisation | `APP` | General app behaviour, UX, i18n |
 | `REC` | Receipts & documents | `NFR` | Non-functional (quality) requirements |
-| `TAX` | Tax tagging | | |
+| `TAX` | Tax tagging | `KGM` | Knowledge Graph Manager backend (optional) |
 
 **Priority** follows MoSCoW: **M**ust, **S**hould, **C**ould, **W**on't (in 1.0). **Milestones** `M0`–`M8` are defined in [ROADMAP.md](ROADMAP.md); `post` means after 1.0.
 
@@ -79,11 +79,12 @@ The key words MUST, SHOULD and MAY are used as described in RFC 2119/8174.
 * **Generic tax tagging:** user-defined tax categories, tax-year report and receipt bundle export. *Should, planned for 1.0.*
 * **Data-science extras:** anomaly detection, forecasting, a personal inflation index from receipt line items. *Should/could.*
 * Natural-language questions, a SPARQL console, Python notebook access. *Could.*
+* **Knowledge Graph Manager backend:** publish the ontology, shapes and data to a user-operated KGM (Apache Jena + Spring Boot) for server-side SPARQL, validation and graph history (§6.11). *Could, low priority, post-1.0: kept in mind so the architecture does not preclude it.*
 * Live bank access (FinTS/HBCI, PSD2), budgets, household mode. *Post-1.0.*
 
 ### 1.4 Out of scope (Abgrenzungskriterien)
 
-* A backend or cloud service operated by the project; user accounts or sign-up.
+* A backend or cloud service operated by the project; user accounts or sign-up. (A backend the **user** operates, such as the optional Knowledge Graph Manager in §6.11, is allowed. Cashflow never depends on it.)
 * Payment initiation or any write access to bank accounts.
 * Storing online-banking credentials; screen scraping of banking websites.
 * Portfolio tracking (security positions, performance). Broker accounts are modelled only through their cash flows.
@@ -106,6 +107,7 @@ The key words MUST, SHOULD and MAY are used as described in RFC 2119/8174.
 | Storage | SQLite (encrypted) as system of record with an append-only operation log. | [ADR-0002](adr/0002-local-first-storage.md) |
 | Licence | AGPL-3.0-or-later for code; CC BY 4.0 for ontology & taxonomy. | [ADR-0007](adr/0007-licensing.md) |
 | AI categorisation | Embedding + classifier and typed decision models (e.g. open-weight Laya) on the device; hosted models (e.g. TypeSafe Jev) only as opt-in. | [ADR-0006](adr/0006-on-device-ml.md) |
+| Knowledge-graph backend | Optional, low-priority (post-1.0), user-operated Knowledge Graph Manager (Apache Jena + Spring Boot) via its REST API. Cashflow publishes to it one way; SQLite stays the system of record. | [ADR-0008](adr/0008-knowledge-graph-manager-backend.md) |
 | Feature tracking | Lastenheft with `LF-*` IDs and status; requirements here trace to it (§17). | — |
 | Docs language | English; German domain terms in parentheses where helpful. | — |
 
@@ -130,10 +132,11 @@ The key words MUST, SHOULD and MAY are used as described in RFC 2119/8174.
 | S-07 | **Tax year** | User defines tax categories ("Work equipment", "Medical", "Donations") → rules and receipt line items tag items → at year end: report plus a ZIP with all linked receipts for the tax software or adviser. |
 | S-08 | **Two devices** | Phone and laptop paired once by QR code; on the same Wi-Fi they sync automatically; receipts captured on the phone appear on the laptop. |
 | S-09 | **Data-science mode** | Export Parquet and analyse it in a notebook with polars/DuckDB, or query the RDF export with SPARQL. |
+| S-10 | **Knowledge Graph Manager** | Alex runs a KGM in Docker on a home server → binds the profile to it once → after each import the new data appears as an instance graph in the `cashflow-alex` project → Alex runs SPARQL queries and SHACL validation in the KGM and links the finance data with other graphs. |
 
 ### 2.3 Operating conditions
 
-* Single user; works fully offline. Network access happens only for sync, model downloads, opt-in cloud extraction and optional exchange-rate downloads, each triggered or allowed explicitly.
+* Single user; works fully offline. Network access happens only for sync, model downloads, opt-in cloud extraction, optional exchange-rate downloads and an optional user-operated Knowledge Graph Manager (§6.11), each triggered or allowed explicitly.
 * Design volume: up to 30 accounts, 200 000 transactions (≈ 20 years) and 30 000 receipts per profile.
 * Consumer hardware; ML features adapt to device capability (§8.1).
 
@@ -178,6 +181,7 @@ Candidates marked *(evaluate)* are validated in the M0 spikes before they are ad
 | OCR | **PaddleOCR PP-OCRv5** mobile detection/recognition as ONNX, e.g. via the `oar-ocr` crate *(evaluate)*; Apple Vision on Apple platforms (optional) | See §8.4. |
 | Sync | **iroh 1.x** (QUIC, hole punching, relays) with `iroh-mdns-address-lookup` for LAN discovery; HLC operation log | See §9. |
 | Plugins | WebAssembly components (WASI 0.2) on **Wasmtime**; the Pulley interpreter where JIT is unavailable (iOS) *(evaluate)* | Sandboxed code connectors (CON-05). |
+| KGM client | **`reqwest`** (rustls) against the Knowledge Graph Manager REST API (OpenAPI 3.1); typed client generated with `progenitor` or handwritten *(evaluate)* | Optional backend, §6.11. Server side (not shipped by us): Apache Jena + Spring Boot. |
 | ML workbench | Python 3.13 with **uv**, polars, scikit-learn, PyTorch, ONNX tooling, **marimo** notebooks | Development time only. |
 | CI/CD | GitHub Actions; clippy, rustfmt, cargo-deny, cargo-audit, eslint, prettier, ruff; signed releases, CycloneDX SBOM | §12. |
 
@@ -208,6 +212,9 @@ flowchart LR
   camera[/"Camera · PDFs · e-invoices"/] --> rec
   sync <-->|"QUIC, end-to-end encrypted<br/>LAN or hole-punched"| peer["Other own device"]
   ml -.->|"opt-in, per request"| cloud["Third-party AI API<br/>(user's own key)"]
+  kgm["cf-kgm<br/>publisher · outbox"]
+  store --> kgm
+  kgm -.->|"opt-in, HTTP(S) REST"| kgmsrv[("Knowledge Graph Manager<br/>Jena + Spring Boot<br/>(user-operated)")]
   ont --> out[/"RDF · CSV · Parquet"/]
   wb["Python ML workbench<br/>(development time)"] -.->|"ONNX/GGUF models + registry"| ml
 ```
@@ -227,6 +234,7 @@ The UI is a thin layer over the core. All domain logic, persistence, ML inferenc
 | `cf-analytics` | Metric definitions (§6.4.4), roll-ups, time-series features, anomaly detection, forecasting, Parquet export. |
 | `cf-tax` | Tax categories, assignments, rule packs, tax-year reports and bundles. |
 | `cf-ontology` | RDF export/import, SHACL validation hook, SPARQL console. |
+| `cf-kgm` | Optional Knowledge Graph Manager backend: binding, IRI mapping, Turtle publishing, op-log outbox, drift detection, remote SPARQL (§6.11). |
 | `cf-sync` | Device identity, pairing, iroh transport, version vectors, op replication, blob transfer. |
 | `cf-cli` | `cashflow` command line: import, export, conformance, maintenance. |
 | `cf-py` *(S)* | Python bindings (PyO3/maturin) for notebooks. |
@@ -287,6 +295,7 @@ A CI test (from M1) exports fixture databases to RDF, validates them with SHACL 
 3. **Model registry entries**: additional OCR/VLM/embedding models with hashes and licences (§8.1).
 4. **Category schemes**: alternative or extended SKOS taxonomies.
 5. **Exporters**: further output formats (EXP-06).
+6. **Remote knowledge-graph backends**: the KGM publisher (§6.11) uses the RDF export partitioned by graph. Other triple stores can be added behind the same interface.
 
 ---
 
@@ -755,7 +764,7 @@ Tax features are **jurisdiction-agnostic**: Cashflow helps collect and document 
 | SEC-08 | Security review before 1.0; `SECURITY.md` with a disclosure process. | S | M8 |
 | SEC-09 | API keys for opt-in services stored in the OS keystore; not synced unless the user opts in. | M | M4 |
 | SEC-10 | Export all data; delete all data (crypto-shredding). | M | M1 |
-| SEC-11 | **Network-transparency screen**: every network access (sync, model downloads, opt-in AI, exchange rates) is logged locally and listed. | M | M5 |
+| SEC-11 | **Network-transparency screen**: every network access (sync, model downloads, opt-in AI, exchange rates, Knowledge Graph Manager) is logged locally and listed. | M | M5 |
 
 ### 6.9 Export, backup & interoperability (EXP)
 
@@ -783,6 +792,80 @@ Tax features are **jurisdiction-agnostic**: Cashflow helps collect and document 
 | APP-09 | Signed desktop builds for Windows, macOS and Linux from CI. | M | M2 |
 | APP-10 | Android and iOS builds (APK/F-Droid, TestFlight) from CI. | M | M5 |
 | APP-11 | Public distribution: GitHub Releases, Flathub, F-Droid (reproducible), App Store/TestFlight; signed artifacts and SBOMs. | M | M8 |
+
+### 6.11 Knowledge Graph Manager backend (KGM)
+
+The **Knowledge Graph Manager** (KGM) is a knowledge-graph server built on **Apache Jena** and **Spring Boot**. It exposes a REST API (OpenAPI 3.1, default `http://localhost:8090`) that organises RDF data in *projects*. A project holds ontology graphs (T-Box), SHACL validation graphs, software mapping graphs and instance graphs (A-Box). Every change is recorded as a versioned graph update that can be reverted. Cashflow supports a KGM instance **that the user operates themselves** as an optional backend (decision: [ADR-0008](adr/0008-knowledge-graph-manager-backend.md)).
+
+#### 6.11.1 Role and scope
+
+* **Optional and user-operated.** The project runs no KGM instance, and Cashflow works fully without one (§1.4, RB-01). A *KGM binding* is configured per profile and is off by default.
+* **Mirror, not system of record.** The encrypted SQLite database stays the system of record (ADR-0002). Cashflow **publishes** its vocabulary and data to the KGM project (one-way, Cashflow → KGM). It reads back only query results, validation reports and warnings. Edits made directly in the KGM are not imported in 1.0 (KGM-12).
+* **What it is for:** server-side SPARQL and SHACL validation over the complete history; graph visualisation (Graphviz/Cytoscape endpoints); the KGM's versioned graph-update history; and combining finance data with other knowledge graphs or tools that use the same KGM.
+
+#### 6.11.2 Resource mapping
+
+| Cashflow | KGM resource | API |
+|---|---|---|
+| Profile | **Project**, name `cashflow-<profile-slug>` (only `[A-Za-z0-9_-]`), ID `Project-<name>-<uuid>` | `POST /projects`, `PATCH /projects/{projectID}` |
+| — | **Tags**: top-level tag `Cashflow`, assigned to the project | `POST /tags`, `POST /projects/{projectID}/tags/{tagID}` |
+| `ontology/cashflow.ttl` | **Ontology** graph, domain `cashflow` | `POST /projects/{projectID}/ontologies/cashflow` |
+| `ontology/categories.ttl` (default SKOS scheme) | **Ontology** graph, domain `cashflow-categories` | `POST /projects/{projectID}/ontologies/cashflow-categories` |
+| `ontology/shapes.ttl` | **Validation** graph, name `cashflow-shapes` | `POST /projects/{projectID}/validations/cashflow-shapes` |
+| Ontology ↔ relational mapping (§4.5) | **Mapping** graph, software `cashflow`, attached to the `cashflow` ontology | `POST /projects/{projectID}/mappings/cashflow?ontologyID=…` |
+| Master data: accounts, institutions, parties, merchants, user categories, tax categories, rules | One **instance graph** "master data" | `POST /projects/{projectID}/instances/{userID}/file` |
+| One import run with its source file, source records, transactions and provenance (§5.7) | One **instance graph** per import run | same |
+| One receipt extraction batch: documents, line items, extraction runs (metadata only, never images) | One **instance graph** per batch | same |
+| Later changes (categorisation, splits, links, tags, deletions) | **SPARQL UPDATE** on the affected instance graph | `PATCH /projects/{projectID}/instances/{instanceID}` |
+| Undone import run | Delete the instance graph | `DELETE /projects/{projectID}/instances/{instanceID}` |
+
+The binding (server URL, project ID, the IDs of all published graphs, the publish cursor and per-graph content hashes) is stored locally in `kgm_bindings` and `kgm_graphs`.
+
+#### 6.11.3 IRIs and serialisation
+
+* **Instance IRIs.** The KGM requires instance resources to use the prefix `http://knowledge-graph-manager/instance#`. Cashflow maps `urn:uuid:<uuid>` ↔ `http://knowledge-graph-manager/instance#<uuid>` (the bare ID is the UUID) in both directions. Vocabulary IRIs (`cf:`, `cfcat:`, `skos:`, `prov:`, …) are unchanged. Because import IDs are deterministic (SYN-05), re-publishing produces the same KGM instances.
+* **Turtle, not JSON, for writes.** Instance data is uploaded as Turtle through the `…/instances/{userID}/file` endpoint. The JSON import format (`InstanceDataList`) carries data-property values only as plain strings, numbers and booleans. That would lose `xsd:decimal` amounts (money must stay exact, §4.4), `xsd:date` datatypes and language tags. The JSON export endpoints MAY be used for reading.
+* **Same content as the RDF export.** Published graphs are partitions of the EXP-01 export, so they conform to the same SHACL shapes. Redaction profiles (KGM-07) remove properties. They never change values.
+
+#### 6.11.4 Publishing protocol
+
+1. **Bind** (KGM-01): health check, then create or select the project, assign the tag and publish the vocabulary (KGM-02).
+2. **Initial publish** (KGM-03): the master-data graph first, then one graph per import run in chronological order. Uploads use `validateData=true`. A `400` response means the shapes rejected the data: the graph is marked *rejected* and the report is shown. Cashflow never silently retries without validation.
+3. **Incremental changes** (KGM-04): operations from the op-log (§4.4) that touch published entities are written to an outbox. The publisher translates them per instance graph into `DELETE DATA`/`INSERT DATA` updates and sends them in op-log order. Each update carries a description `cashflow ops <first>–<last> <hash>`.
+4. **At-least-once without duplicates.** The KGM has no idempotency keys. If a request outcome is unknown (timeout, connection lost), the publisher reads `GET …/instances/{instanceID}/updates`. If an update with the same description marker exists, the batch counts as applied. Otherwise it is sent again.
+5. **Drift and rebuild** (KGM-05): the publisher compares a per-graph content hash or triple count from the KGM with the local state. Server-side reverts, manual edits or lost updates cause drift. A drifted graph is deleted and uploaded again. A full rebuild re-publishes everything.
+
+#### 6.11.5 Client rules for the KGM API
+
+These rules follow from the KGM OpenAPI document. The pinned copy lives at `docs/api/kgm-openapi.yaml` (target), and a spike before implementation checks each rule against a running server.
+
+* **Version header.** Send `X-API-Version: 1.1` on SPARQL queries and updates. In version 1.1 the query travels in the JSON body (`SparqlQueryRequest`, `SparqlUpdateQueryRequest`) instead of the URL. This avoids URL length limits and keeps query text out of access logs.
+* **Uploads.** The document declares file uploads as `application/json` with a binary `file` property. The client sends `multipart/form-data` with a part named `file`, which is what Spring Boot's `MultipartFile` expects. The spike confirms this.
+* **Empty lists.** Some list endpoints answer `404` instead of an empty array, for example `GET /projects` with no projects or `GET /projects/{projectID}/tags` with no tags. When the parent resource is known to exist, the client treats this as an empty list.
+* **Responses.** Most responses are declared as `*/*`. Create calls return the new ID as a plain-text body. Error bodies are free-text messages that are shown to the user but never parsed for control flow.
+* **Pagination.** Serialisation, JSON and SPARQL endpoints are paged (`page`, from 0). Pagination is *semantic*: the server pages by subject, so a single page can be missing links between resources. Full reads fetch all pages until the server returns an empty page or `404`, then merge the results.
+* **No automatic reverts or clones.** Cashflow never calls the `…/revert/{updateID}` endpoints, which irreversibly delete later updates. If a user reverts in the KGM, drift detection (KGM-05) repairs the graph. Before an ontology major-version update, Cashflow MAY back up the project with `POST /projects/{projectID}/clone`, but only after asking.
+* **User ID.** `userID` is a self-asserted label, not authentication. Cashflow sends the configured value (default: `cashflow-<device-name>`).
+
+#### 6.11.6 Requirements
+
+The feature is **low priority** (*Could*, after 1.0). It is specified now so that earlier work (RDF export, op-log, network log) does not preclude it. When it is implemented, KGM-07 and KGM-09 are mandatory.
+
+| ID | Requirement | Prio | MS |
+|---|---|---|---|
+| KGM-01 | **Binding**: connect a profile to a user-operated KGM by base URL. Create the project (`cashflow-<slug>`) and its `Cashflow` tag, or bind to an existing project. Health check via `GET /projects` and `GET /metadata/graphNames`. Unbind without data loss. | C | post |
+| KGM-02 | **Vocabulary publishing**: ontology, default category scheme, SHACL shapes and the software mapping (§6.11.2). Compare `owl:versionIRI` and update in place with SPARQL UPDATE when Cashflow ships a new ontology version, so graph IDs stay stable. | C | post |
+| KGM-03 | **Instance publishing**: a master-data graph plus one instance graph per import run and per receipt batch, as Turtle with mapped IRIs (§6.11.3) and `validateData=true`. Shape violations are reported and the graph is marked rejected. | C | post |
+| KGM-04 | **Incremental propagation**: an op-log outbox becomes per-graph SPARQL UPDATE batches (`X-API-Version: 1.1`), sent in order and at least once, with duplicates detected through the update-history marker (§6.11.4). An undone import deletes its instance graph. | C | post |
+| KGM-05 | **Drift detection and rebuild**: per-graph hash or triple-count check on demand and after errors. Drifted graphs are rebuilt. A full rebuild is available as an action. | C | post |
+| KGM-06 | **Remote query and validation**: the SPARQL console (EXP-02) can target the KGM A-Box (`POST …/instances/sparql`, results as SPARQL JSON, paged). The UI shows the KGM validation report (`GET …/validations/validate`) and project warnings (`GET …/warnings`). | C | post |
+| KGM-07 | **Security and consent**: by default only loopback URLs are allowed. Other hosts require HTTPS plus authentication through a reverse proxy (HTTP Basic, bearer token or mTLS client certificate), because the KGM API itself has no authentication. Credentials are stored in the OS keystore (as in SEC-09). Before the first publish, a consent dialog lists the data classes that will be sent and warns that the KGM stores them unencrypted under the user's control. Redaction profiles: *full*, or *reduced* (no remittance text and no full IBANs; the result must still conform to the shapes). Every request appears in the network-transparency log (SEC-11). | C | post |
+| KGM-08 | **Single publisher**: binding settings sync between devices (§9). Exactly one device per binding holds the publisher role, which the user can transfer. Other devices may run queries. | C | post |
+| KGM-09 | **Offline and failure behaviour**: KGM availability never blocks local work (NFR-USE-01). The outbox persists, retries with exponential backoff and shows its state in the UI. An unreachable server is a status, not an error dialog. | C | post |
+| KGM-10 | **Unpublish and deletion**: deleting all data (SEC-10) offers to delete the KGM project (`DELETE /projects/{projectID}`). Unbinding offers to keep or delete the remote project. | C | post |
+| KGM-11 | **Contract tests**: the client is checked against the pinned OpenAPI document. CI runs it against a mock server generated from that document. A live test suite runs against a real KGM when `KGM_URL` is set (nightly or locally). | C | post |
+| KGM-12 | **Two-way sync**: import edits made in the KGM (from its graph-update history) back into Cashflow as operations, with conflict handling as in §9.4. | C | post |
+| KGM-13 | KGM as the **primary store** instead of the local database, which would break local-first, offline use and encryption at rest. | W | — |
 
 ---
 
@@ -1025,13 +1108,13 @@ Deterministic simulation: two to four in-process peers with random operation int
 ```
 Cashflow/
 ├── crates/            cf-domain, cf-store, cf-connectors, cf-enrich, cf-ml, cf-receipts,
-│                      cf-analytics, cf-tax, cf-ontology, cf-sync, cf-cli, cf-py
+│                      cf-analytics, cf-tax, cf-ontology, cf-sync, cf-kgm, cf-cli, cf-py
 ├── app/               Tauri 2 app: src-tauri/ (Rust) + src/ (Svelte 5), mobile plugins
 ├── connectors/        definitions/, fixtures/, schema/  (exists)
 ├── ontology/          OWL, SKOS, SHACL, examples, queries  (exists)
 ├── ml/                Python workbench (uv), notebooks, model registry sources
 ├── tools/             validation and developer tooling  (exists)
-└── docs/              this specification, roadmap, ADRs, user docs
+└── docs/              this specification, roadmap, ADRs, user docs; api/kgm-openapi.yaml (pinned KGM API)
 ```
 
 ### 12.2 Process
@@ -1064,6 +1147,8 @@ Cashflow/
 | R-09 | SQLCipher and native dependencies complicate mobile builds | medium / medium | M0 spike; vendored builds; documented toolchains. |
 | R-10 | Ontology work slows delivery | medium / medium | Relational runtime; RDF only at boundaries; lightweight change process. |
 | R-11 | Dependence on third-party relay or discovery infrastructure | low / low | LAN-only default; self-hostable relay; no hard dependency. |
+| R-12 | The KGM API changes incompatibly (it is versioned only through `X-API-Version`) | medium / low | Pinned OpenAPI copy, contract tests (KGM-11), optional feature that never blocks local work (KGM-09). |
+| R-13 | Finance data exposed through an unauthenticated KGM | medium / high | Loopback-only default, HTTPS plus reverse-proxy authentication for remote hosts, consent dialog and redaction profiles (KGM-07). |
 
 ---
 
@@ -1082,6 +1167,8 @@ Cashflow/
 | OQ-09 | Product name: "Cashflow" is generic; check for trademark conflicts before the first public release. | Check in M2. |
 | OQ-10 | Should a community merchant dictionary be hosted as a static file (one optional network fetch)? | Yes, opt-in (CAT-10). |
 | OQ-11 | Which jurisdictions' tax rule packs could the community maintain, and with what disclaimer? | Start with a template pack; no official packs in 1.0. |
+| OQ-12 | KGM instance-graph granularity: one graph per import run, or per account and month? | Per import run (matches provenance and undo); revisit if the KGM slows down with thousands of graphs. |
+| OQ-13 | Is a KGM container image available for CI, and under which licence? | Mock server in CI until it is; live tests opt-in (KGM-11). |
 
 ---
 
@@ -1108,6 +1195,8 @@ Cashflow/
 | CRDT / LWW / OR-set | Conflict-free replicated data type / last-writer-wins / observed-remove set. |
 | OCR / VLM / LLM | Optical character recognition / vision-language model / large language model. |
 | ONNX / GGUF | Model exchange format (ONNX Runtime) / llama.cpp model format. |
+| KGM | Knowledge Graph Manager: a project-based RDF server (Apache Jena + Spring Boot) with ontology, validation, mapping and instance graphs and a versioned update history (§6.11). |
+| T-Box / A-Box | Terminology (ontology, schema) / assertions (instance data) of a knowledge graph. |
 | ISO week | Week Monday–Sunday; week 1 contains the first Thursday of the year. |
 
 ---
@@ -1117,6 +1206,7 @@ Cashflow/
 * W3C: [OWL 2](https://www.w3.org/TR/owl2-overview/), [SKOS](https://www.w3.org/TR/skos-reference/), [SHACL](https://www.w3.org/TR/shacl/), [PROV-O](https://www.w3.org/TR/prov-o/)
 * [schema.org](https://schema.org/), [ISO 20022](https://www.iso20022.org/), [EDM Council FIBO](https://spec.edmcouncil.org/fibo/), [SSSOM](https://mapping-commons.github.io/sssom/)
 * [RFC 9562 — UUIDs](https://www.rfc-editor.org/rfc/rfc9562), [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119)
+* [Apache Jena](https://jena.apache.org/), [Spring Boot](https://spring.io/projects/spring-boot), [OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.0): basis of the Knowledge Graph Manager backend (§6.11)
 * [Tauri 2](https://v2.tauri.app/), [Svelte](https://svelte.dev/), [D3](https://d3js.org/), [Oxigraph](https://github.com/oxigraph/oxigraph), [SQLCipher](https://www.zetetic.net/sqlcipher/)
 * [iroh](https://www.iroh.computer/) (1.0, June 2026) and its [local discovery docs](https://docs.iroh.computer/connecting/local-discovery)
 * [ONNX Runtime](https://onnxruntime.ai/), [`ort`](https://ort.pyke.io/), [llama.cpp](https://github.com/ggml-org/llama.cpp), [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
@@ -1127,7 +1217,7 @@ Cashflow/
 
 ## 17. Traceability: Lastenheft → Pflichtenheft
 
-Every [Lastenheft](LASTENHEFT.md) feature is refined into the requirements listed here; every requirement of this document (except *Won't*: CON-23, TAX-07) serves at least one feature. Quality requirements (`LQ-*`) are refined by the `NFR-*` table in §7. `tools/validate.py` checks this matrix in CI: completeness in both directions and that each feature's milestone is among its requirements' milestones.
+Every [Lastenheft](LASTENHEFT.md) feature is refined into the requirements listed here; every requirement of this document (except *Won't*: CON-23, TAX-07, KGM-13) serves at least one feature. Quality requirements (`LQ-*`) are refined by the `NFR-*` table in §7. `tools/validate.py` checks this matrix in CI: completeness in both directions and that each feature's milestone is among its requirements' milestones.
 
 | Lastenheft feature | Pflichtenheft requirements |
 |---|---|
@@ -1206,6 +1296,7 @@ Every [Lastenheft](LASTENHEFT.md) feature is refined into the requirements liste
 | LF-EXP-01 | EXP-01 |
 | LF-EXP-02 | EXP-03 |
 | LF-EXP-03 | EXP-06 |
+| LF-EXP-04 | KGM-01, KGM-02, KGM-03, KGM-04, KGM-05, KGM-06, KGM-07, KGM-08, KGM-09, KGM-10, KGM-11, KGM-12 |
 | LF-APP-01 | APP-08 |
 | LF-APP-02 | APP-01 |
 | LF-APP-03 | APP-02 |

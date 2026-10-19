@@ -282,11 +282,11 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 
 ## After 1.0
 
-**Delivers:** LF-IMP-18 · LF-ANA-15 · LF-SYN-07 · LF-EXP-03.
+**Delivers:** LF-IMP-18 · LF-ANA-15 · LF-SYN-07 · LF-EXP-03, LF-EXP-04.
 
-**Requirements (Pflichtenheft):** CON-20, CON-21, ANA-19, SYN-09, EXP-06.
+**Requirements (Pflichtenheft):** CON-20, CON-21, ANA-19, SYN-09, EXP-06, KGM-01, KGM-02, KGM-03, KGM-04, KGM-05, KGM-06, KGM-07, KGM-08, KGM-09, KGM-10, KGM-11, KGM-12.
 
-Live bank access (FinTS/PSD2), budgets, more devices and a household mode, plain-text accounting exports; possibly community tax rule packs.
+Live bank access (FinTS/PSD2), budgets, more devices and a household mode, plain-text accounting exports; possibly community tax rule packs; an optional Knowledge Graph Manager backend (low priority, Pflichtenheft §6.11).
 
 ---
 
@@ -302,7 +302,7 @@ Live bank access (FinTS/PSD2), budgets, more devices and a household mode, plain
 | M6 | LF-REC-01, LF-REC-02, LF-REC-03, LF-REC-04, LF-REC-05 |
 | M7 | LF-REC-06, LF-REC-07, LF-REC-08, LF-TAX-01, LF-TAX-02, LF-TAX-03, LF-TAX-04, LF-TAX-05, LF-ANA-13 |
 | M8 | LF-ANA-14, LF-APP-07, LF-PLT-03 |
-| post | LF-IMP-18, LF-ANA-15, LF-SYN-07, LF-EXP-03 |
+| post | LF-IMP-18, LF-ANA-15, LF-SYN-07, LF-EXP-03, LF-EXP-04 |
 
 ## Requirement → milestone index (Pflichtenheft)
 
@@ -319,5 +319,5 @@ Generated from the requirement tables of the [Pflichtenheft](SPECIFICATION.md); 
 | M6 | D-03, REC-01, REC-02, REC-03, REC-04, REC-05, REC-06, REC-07, REC-08, REC-09, REC-12, REC-15 |
 | M7 | CON-13, ANA-14, REC-10, REC-11, REC-13, REC-14, TAX-01, TAX-02, TAX-03, TAX-04, TAX-05, TAX-06 |
 | M8 | ANA-18, SEC-08, APP-04, APP-07, APP-11 |
-| post | CON-20, CON-21, ANA-19, SYN-09, EXP-06 |
-| won't | CON-23, TAX-07 |
+| post | CON-20, CON-21, ANA-19, SYN-09, EXP-06, KGM-01, KGM-02, KGM-03, KGM-04, KGM-05, KGM-06, KGM-07, KGM-08, KGM-09, KGM-10, KGM-11, KGM-12 |
+| won't | CON-23, TAX-07, KGM-13 |

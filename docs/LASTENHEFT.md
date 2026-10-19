@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Document** | Lastenheft: what Cashflow must do, from the user's point of view, and the tracker for features and milestones |
-| **Version** | 0.2.0 — draft for review |
+| **Version** | 0.3.0 — draft for review |
 | **Date** | 2026-10-19 |
 | **Client (Auftraggeber)** | Project maintainer |
 | **Follow-up documents** | [Milestone roadmap](ROADMAP.md) · [Pflichtenheft](SPECIFICATION.md) (technical specification) · [Rust learning path](learning/RUST.md) |
@@ -86,7 +86,7 @@ These were decided in the kickoff on 2026-10-19.
 
 | ID | Constraint |
 |---|---|
-| RB-01 | **No backend.** The project operates no server; there are no user accounts. |
+| RB-01 | **No backend.** The project operates no server; there are no user accounts. A server the user runs themselves (e.g. a Knowledge Graph Manager, LF-EXP-04) may be connected as an option. |
 | RB-02 | **Single user**, several accounts, laptop **and** phone. |
 | RB-03 | **Cross-platform** from one codebase: Windows, macOS, Linux, Android, iOS. Stack: Rust core, Tauri 2, Svelte UI; Python only for developing ML models. |
 | RB-04 | **Peer-to-peer sync** between the user's devices, without a central server. |
@@ -226,6 +226,7 @@ AI-based categorisation uses two kinds of models:
 | LF-EXP-01 | Export all data as **RDF** following the ontology. | The export passes the ontology's validation rules. | M | M1 | 🔵 |
 | LF-EXP-02 | Export transactions as **CSV/Excel**. | Opens correctly in LibreOffice and Excel. | M | M2 | 🔵 |
 | LF-EXP-03 | Export to plain-text accounting tools (Beancount, hledger). | Valid journals. | C | post | 🔵 |
+| LF-EXP-04 | Optionally **connect my own Knowledge Graph Manager** (Apache Jena + Spring Boot server) and keep the ontology, validation rules and my data published there, so I can query and validate them on the server and combine them with other knowledge graphs. | After an import, the new data is in the KGM project, passes its SHACL validation, and a SPARQL query there returns the same monthly totals as the app. | C | post | 🔵 |
 
 ### 4.10 App & usability (`APP`)
 
@@ -295,7 +296,7 @@ Details, deliverables and exit criteria: [ROADMAP.md](ROADMAP.md).
 | **M6** | Receipts v1 | REC-01…05 | v0.6 |
 | **M7** | Receipts v2 & taxes | REC-06…08, TAX-01…05, ANA-13 | v0.7 |
 | **M8** | Hardening & 1.0 | ANA-14, APP-07, PLT-03 | **v1.0** |
-| post | After 1.0 | IMP-18, ANA-15, SYN-07, EXP-03 | — |
+| post | After 1.0 | IMP-18, ANA-15, SYN-07, EXP-03…04 | — |
 
 (Feature IDs abbreviated without the `LF-` prefix.)
 
@@ -341,3 +342,4 @@ Details, deliverables and exit criteria: [ROADMAP.md](ROADMAP.md).
 |---|---|---|
 | 0.1.0 | 2026-10-19 | First version from the kickoff Q&A; AI categorisation with typed decision models (Laya on-device, TypeSafe Jev opt-in) added. |
 | 0.2.0 | 2026-10-19 | All features specified in the Pflichtenheft (status 🔵); ontology v0.1 and connector language v0.1 drafted (status 🟡). |
+| 0.3.0 | 2026-10-19 | LF-EXP-04: optional user-operated Knowledge Graph Manager backend, low priority (post-1.0) (Pflichtenheft §6.11, ADR-0008). |
