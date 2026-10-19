@@ -1,0 +1,26 @@
+# Monthly spend per leaf category (trend view, ANA-06).
+# Internal transfers and savings are excluded through the category kind.
+
+PREFIX cf:   <https://gerfr.github.io/Cashflow/ontology/cashflow#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT ?month ?notation (SUM(?signed) AS ?spend)
+WHERE {
+  {
+    ?item a cf:Transaction ;
+          cf:category ?cat ; cf:bookingDate ?d ; cf:direction ?dir ;
+          cf:amount/cf:value ?v .
+    FILTER NOT EXISTS { ?item cf:split ?anySplit }
+  } UNION {
+    ?tx a cf:Transaction ;
+        cf:split ?item ; cf:bookingDate ?d ; cf:direction ?dir .
+    ?item cf:category ?cat ; cf:amount/cf:value ?v .
+  }
+  ?cat skos:notation ?notation ;
+       skos:broader* ?top .
+  ?top cf:categoryKind cf:ExpenseKind .
+  BIND (SUBSTR(STR(?d), 1, 7) AS ?month)
+  BIND (IF(?dir = cf:Debit, ?v, -?v) AS ?signed)
+}
+GROUP BY ?month ?notation
+ORDER BY ?month DESC(?spend)

@@ -1,6 +1,6 @@
 # Cashflow — Milestone roadmap
 
-This roadmap orders the features of the [Lastenheft](LASTENHEFT.md) into milestones. Each milestone has a goal, the features it delivers, concrete deliverables, exit criteria (Definition of Done) and a **learning focus**: the technologies you get hands-on with, linked to the [Rust learning path](learning/RUST.md).
+This roadmap orders the features of the [Lastenheft](LASTENHEFT.md) and the requirements of the [Pflichtenheft](SPECIFICATION.md) into milestones. Each milestone has a goal, the features it delivers, concrete deliverables, exit criteria (Definition of Done) and a **learning focus**: the technologies you get hands-on with, linked to the [Rust learning path](learning/RUST.md).
 
 * Milestones are gated by **exit criteria**, not by dates.
 * Sizes are rough relative effort for one part-time developer: **S** ≈ 2 weeks, **M** ≈ 1 month, **L** ≈ 2 months, **XL** ≈ 3+ months.
@@ -45,12 +45,14 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 
 **Delivers:** planning artefacts only (no Lastenheft features).
 
+**Requirements (Pflichtenheft):** SEC-03.
+
 | Deliverable | Where | Status |
 |---|---|---|
 | Lastenheft (features, constraints, quality, acceptance) + this roadmap + Rust learning path | PR #1 | 🟡 in review |
-| Pflichtenheft (technical specification) + architecture decision records | PR #2 | ⚪ draft |
-| Ontology v0.1 (OWL, SKOS categories, SHACL rules, examples) | PR #2 | ⚪ draft |
-| Connector language v0.1 (schema, reference interpreter, first sample files) + validation tooling + CI | PR #2 | ⚪ draft |
+| Pflichtenheft (technical specification) + architecture decision records | PR #2 | 🟡 in review |
+| Ontology v0.1 (OWL, SKOS categories, SHACL rules, examples) | PR #2 | 🟡 in review |
+| Connector language v0.1 (schema, reference interpreter, first sample files) + validation tooling + CI | PR #2 | 🟡 in review |
 | Technical spikes SP-1 … SP-9, each with a short written result | later PRs | ⚪ |
 | Repository scaffolding: Cargo workspace, Tauri app skeleton, Python ML workbench | later PR | ⚪ |
 | Threat model v0 | later PR | ⚪ |
@@ -81,6 +83,8 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 
 **Delivers:** LF-IMP-01, LF-IMP-02, LF-IMP-03, LF-IMP-04, LF-IMP-05, LF-IMP-06, LF-IMP-07 · LF-DAT-01, LF-DAT-02, LF-DAT-03 · LF-SYN-01 · LF-PRV-01, LF-PRV-02, LF-PRV-03 · LF-EXP-01 · LF-APP-01.
 
+**Requirements (Pflichtenheft):** D-01, D-02, D-05, D-06, D-07, D-08, ACC-01, ACC-02, CON-01, CON-02, CON-03, CON-04, CON-06, CON-07, CON-08, CON-10, CON-11, CON-16 (part), CON-17, SEC-01, SEC-04, SEC-05, SEC-07, SEC-10, EXP-01, EXP-05, APP-08.
+
 **Deliverables**
 
 * Rust crates for the domain model, encrypted storage with an operation log, connectors (detection, declarative engine, camt.053 parser) and RDF export; the `cashflow` command line (import with preview, export, backup/restore).
@@ -106,6 +110,8 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 
 **Delivers:** LF-CAT-01, LF-CAT-02, LF-CAT-03, LF-CAT-04, LF-CAT-05, LF-CAT-06, LF-CAT-07 · LF-ANA-01, LF-ANA-02, LF-ANA-03, LF-ANA-04, LF-ANA-05, LF-ANA-06 · LF-EXP-02 · LF-APP-02, LF-APP-03, LF-APP-04, LF-APP-05 · LF-PLT-01.
 
+**Requirements (Pflichtenheft):** ACC-04, CAT-01, CAT-02, CAT-03, CAT-05, CAT-06, CAT-07, CAT-08, ANA-01, ANA-02, ANA-03, ANA-04, ANA-05, ANA-07, ANA-15, ANA-20, EXP-03, APP-01, APP-02, APP-03, APP-06, APP-09.
+
 **Deliverables**
 
 * Tauri 2 desktop app (Windows, macOS, Linux).
@@ -130,6 +136,8 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 
 **Delivers:** LF-IMP-08, LF-IMP-09, LF-IMP-10, LF-IMP-11, LF-IMP-12, LF-IMP-13, LF-IMP-14, LF-IMP-15, LF-IMP-16, LF-IMP-17.
 
+**Requirements (Pflichtenheft):** ACC-03, CON-05, CON-09, CON-12, CON-14, CON-15, CON-16 (rest), CON-18, CON-19, CON-22.
+
 **Deliverables**
 
 * Connectors for ING, comdirect, VR banks, Commerzbank, Deutsche Bank, Postbank, N26, Revolut, Wise, bunq, Trade Republic, Scalable Capital, Amex, Barclays, DKB Visa; MT940.
@@ -151,6 +159,8 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 **Goal:** smart analytics: categorisation that learns, subscriptions, anomalies, forecasts, and full access for your own data science.
 
 **Delivers:** LF-CAT-08, LF-CAT-09, LF-CAT-10 · LF-ANA-07, LF-ANA-08, LF-ANA-09, LF-ANA-10, LF-ANA-11, LF-ANA-12 · LF-PRV-04.
+
+**Requirements (Pflichtenheft):** CAT-04, CAT-09, CAT-10, CAT-11, CAT-12, ANA-06, ANA-08, ANA-09, ANA-10, ANA-11, ANA-12, ANA-13, ANA-16, ANA-17, SEC-06, SEC-09, EXP-02, EXP-04.
 
 **Deliverables**
 
@@ -176,6 +186,8 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 
 **Delivers:** LF-SYN-02, LF-SYN-03, LF-SYN-04, LF-SYN-05, LF-SYN-06 · LF-PRV-05, LF-PRV-06 · LF-APP-06 · LF-PLT-02.
 
+**Requirements (Pflichtenheft):** D-04, ACC-05, SYN-01, SYN-02, SYN-03, SYN-04, SYN-05, SYN-06, SYN-07, SYN-08, SYN-10, SEC-02, SEC-11, APP-05, APP-10.
+
 **Deliverables**
 
 * Android and iOS apps (bubbles, inbox, quick actions).
@@ -199,6 +211,8 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 **Goal:** photograph a receipt, get its line items on the device, and have the bank payment split automatically.
 
 **Delivers:** LF-REC-01, LF-REC-02, LF-REC-03, LF-REC-04, LF-REC-05.
+
+**Requirements (Pflichtenheft):** D-03, REC-01, REC-02, REC-03, REC-04, REC-05, REC-06, REC-07, REC-08, REC-09, REC-12, REC-15.
 
 **Deliverables**
 
@@ -224,6 +238,8 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 
 **Delivers:** LF-REC-06, LF-REC-07, LF-REC-08 · LF-TAX-01, LF-TAX-02, LF-TAX-03, LF-TAX-04, LF-TAX-05 · LF-ANA-13.
 
+**Requirements (Pflichtenheft):** CON-13, ANA-14, REC-10, REC-11, REC-13, REC-14, TAX-01, TAX-02, TAX-03, TAX-04, TAX-05, TAX-06.
+
 **Deliverables**
 
 * Vision-language model tier (llama.cpp) with model bake-off; processing on the paired laptop.
@@ -247,6 +263,8 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 
 **Delivers:** LF-ANA-14 · LF-APP-07 · LF-PLT-03.
 
+**Requirements (Pflichtenheft):** ANA-18, SEC-08, APP-04, APP-07, APP-11.
+
 **Deliverables**
 
 * Security review and `SECURITY.md`; threat-model update.
@@ -266,6 +284,8 @@ M3, M4 and M5 can run in parallel once M2 is done. Spending analytics, the main 
 
 **Delivers:** LF-IMP-18 · LF-ANA-15 · LF-SYN-07 · LF-EXP-03.
 
+**Requirements (Pflichtenheft):** CON-20, CON-21, ANA-19, SYN-09, EXP-06.
+
 Live bank access (FinTS/PSD2), budgets, more devices and a household mode, plain-text accounting exports; possibly community tax rule packs.
 
 ---
@@ -283,3 +303,21 @@ Live bank access (FinTS/PSD2), budgets, more devices and a household mode, plain
 | M7 | LF-REC-06, LF-REC-07, LF-REC-08, LF-TAX-01, LF-TAX-02, LF-TAX-03, LF-TAX-04, LF-TAX-05, LF-ANA-13 |
 | M8 | LF-ANA-14, LF-APP-07, LF-PLT-03 |
 | post | LF-IMP-18, LF-ANA-15, LF-SYN-07, LF-EXP-03 |
+
+## Requirement → milestone index (Pflichtenheft)
+
+Generated from the requirement tables of the [Pflichtenheft](SPECIFICATION.md); `tools/validate.py` checks that it stays consistent.
+
+| Milestone | Requirements |
+|---|---|
+| M0 | SEC-03 |
+| M1 | D-01, D-02, D-05, D-06, D-07, D-08, ACC-01, ACC-02, CON-01, CON-02, CON-03, CON-04, CON-06, CON-07, CON-08, CON-10, CON-11, CON-16 (part), CON-17, SEC-01, SEC-04, SEC-05, SEC-07, SEC-10, EXP-01, EXP-05, APP-08 |
+| M2 | ACC-04, CAT-01, CAT-02, CAT-03, CAT-05, CAT-06, CAT-07, CAT-08, ANA-01, ANA-02, ANA-03, ANA-04, ANA-05, ANA-07, ANA-15, ANA-20, EXP-03, APP-01, APP-02, APP-03, APP-06, APP-09 |
+| M3 | ACC-03, CON-05, CON-09, CON-12, CON-14, CON-15, CON-16 (rest), CON-18, CON-19, CON-22 |
+| M4 | CAT-04, CAT-09, CAT-10, CAT-11, CAT-12, ANA-06, ANA-08, ANA-09, ANA-10, ANA-11, ANA-12, ANA-13, ANA-16, ANA-17, SEC-06, SEC-09, EXP-02, EXP-04 |
+| M5 | D-04, ACC-05, SYN-01, SYN-02, SYN-03, SYN-04, SYN-05, SYN-06, SYN-07, SYN-08, SYN-10, SEC-02, SEC-11, APP-05, APP-10 |
+| M6 | D-03, REC-01, REC-02, REC-03, REC-04, REC-05, REC-06, REC-07, REC-08, REC-09, REC-12, REC-15 |
+| M7 | CON-13, ANA-14, REC-10, REC-11, REC-13, REC-14, TAX-01, TAX-02, TAX-03, TAX-04, TAX-05, TAX-06 |
+| M8 | ANA-18, SEC-08, APP-04, APP-07, APP-11 |
+| post | CON-20, CON-21, ANA-19, SYN-09, EXP-06 |
+| won't | CON-23, TAX-07 |

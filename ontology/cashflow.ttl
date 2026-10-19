@@ -1,0 +1,1094 @@
+@prefix cf:      <https://gerfr.github.io/Cashflow/ontology/cashflow#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix vann:    <http://purl.org/vocab/vann/> .
+@prefix prov:    <http://www.w3.org/ns/prov#> .
+@prefix schema:  <https://schema.org/> .
+
+# =============================================================================
+#  Cashflow Ontology (cf)
+#
+#  Conceptual model of personal payments, accounts, categories, receipts and
+#  tax tagging used by the Cashflow app. The ontology is the source of truth
+#  for the vocabulary; the app stores data relationally (SQLite) and exports
+#  it losslessly as RDF that conforms to this ontology and to shapes.ttl.
+#
+#  Modules (sections below):
+#    1. Parties & accounts
+#    2. Money & payments (transactions)
+#    3. Categorisation (SKOS-based)
+#    4. Commercial documents (receipts, invoices, orders) & line items
+#    5. Tax tagging (jurisdiction-agnostic)
+#    6. Provenance (imports, extraction runs) - aligned with PROV-O
+#    7. Analytics helpers (recurring series, balances)
+#
+#  Conventions
+#    * Monetary values are xsd:decimal, never floating point.
+#    * Transaction amounts are non-negative; the sign is carried by cf:direction
+#      (as in ISO 20022 Amt + CdtDbtInd).
+#    * Currencies are ISO 4217 alphabetic codes ("EUR").
+#    * Instance data uses urn:uuid: IRIs (see docs/SPECIFICATION.md, section 5.6).
+# =============================================================================
+
+<https://gerfr.github.io/Cashflow/ontology/cashflow>
+    a owl:Ontology ;
+    owl:versionIRI <https://gerfr.github.io/Cashflow/ontology/cashflow/0.1.0> ;
+    owl:versionInfo "0.1.0" ;
+    dcterms:title "Cashflow Ontology"@en , "Cashflow-Ontologie"@de ;
+    dcterms:description "Ontology for personal payments: accounts, transactions, categories, receipts with line items, generic tax tagging and import provenance."@en ;
+    dcterms:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dcterms:creator "Cashflow contributors" ;
+    dcterms:created "2026-10-19"^^xsd:date ;
+    dcterms:modified "2026-10-19"^^xsd:date ;
+    vann:preferredNamespacePrefix "cf" ;
+    vann:preferredNamespaceUri "https://gerfr.github.io/Cashflow/ontology/cashflow#" ;
+    rdfs:seeAlso <https://github.com/GerFr/Cashflow> ;
+    skos:note "Status: draft (milestone M0). Breaking changes are allowed until 1.0.0; afterwards semantic versioning applies."@en .
+
+# -----------------------------------------------------------------------------
+#  External terms used (declared so the ontology stays within OWL 2 DL)
+# -----------------------------------------------------------------------------
+
+dcterms:title        a owl:AnnotationProperty .
+dcterms:description  a owl:AnnotationProperty .
+dcterms:license      a owl:AnnotationProperty .
+dcterms:creator      a owl:AnnotationProperty .
+dcterms:created      a owl:AnnotationProperty .
+dcterms:modified     a owl:AnnotationProperty .
+vann:preferredNamespacePrefix a owl:AnnotationProperty .
+vann:preferredNamespaceUri    a owl:AnnotationProperty .
+skos:definition      a owl:AnnotationProperty .
+skos:example         a owl:AnnotationProperty .
+skos:note            a owl:AnnotationProperty .
+skos:closeMatch      a owl:AnnotationProperty .
+skos:exactMatch      a owl:AnnotationProperty .
+
+skos:Concept         a owl:Class .
+skos:ConceptScheme   a owl:Class .
+prov:Entity          a owl:Class .
+prov:Activity        a owl:Class .
+prov:Agent           a owl:Class .
+prov:SoftwareAgent   a owl:Class ; rdfs:subClassOf prov:Agent .
+
+prov:wasDerivedFrom    a owl:ObjectProperty .
+prov:wasGeneratedBy    a owl:ObjectProperty .
+prov:wasAssociatedWith a owl:ObjectProperty .
+prov:used              a owl:ObjectProperty .
+prov:startedAtTime     a owl:DatatypeProperty .
+prov:endedAtTime       a owl:DatatypeProperty .
+prov:generatedAtTime   a owl:DatatypeProperty .
+
+# -----------------------------------------------------------------------------
+#  Custom annotation properties
+# -----------------------------------------------------------------------------
+
+cf:iso20022Path
+    a owl:AnnotationProperty ;
+    rdfs:label "ISO 20022 path"@en , "ISO-20022-Pfad"@de ;
+    skos:definition "XPath-like location of the corresponding element in an ISO 20022 camt.053 bank-to-customer statement. Guides connector authors."@en .
+
+# =============================================================================
+#  1. Parties & accounts
+# =============================================================================
+
+cf:Party
+    a owl:Class ;
+    rdfs:subClassOf prov:Agent ;
+    rdfs:label "Party"@en , "Partei"@de ;
+    skos:definition "A person or organisation that holds accounts, receives or sends money, or issues commercial documents."@en .
+
+cf:Person
+    a owl:Class ;
+    rdfs:subClassOf cf:Party ;
+    owl:disjointWith cf:Organization ;
+    rdfs:label "Person"@en , "Person"@de ;
+    skos:definition "A natural person, e.g. the account holder or a friend who is paid back."@en ;
+    skos:closeMatch schema:Person .
+
+cf:Organization
+    a owl:Class ;
+    rdfs:subClassOf cf:Party ;
+    rdfs:label "Organization"@en , "Organisation"@de ;
+    skos:definition "A legal entity such as a company, public body or association."@en ;
+    skos:closeMatch schema:Organization .
+
+cf:FinancialInstitution
+    a owl:Class ;
+    rdfs:subClassOf cf:Organization ;
+    rdfs:label "Financial institution"@en , "Finanzinstitut"@de ;
+    skos:definition "An organisation that maintains accounts: a bank, card issuer, payment service provider or broker."@en ;
+    skos:closeMatch schema:BankOrCreditUnion .
+
+cf:Merchant
+    a owl:Class ;
+    rdfs:subClassOf cf:Organization ;
+    rdfs:label "Merchant"@en , "Händler"@de ;
+    skos:definition "An organisation that sells goods or services. Merchants are canonical entities produced by merchant normalisation; the raw counterparty text of a transaction is kept in cf:counterpartyName."@en .
+
+cf:Account
+    a owl:Class ;
+    rdfs:label "Account"@en , "Konto"@de ;
+    skos:definition "A store of money tracked by the user. Only the user's own accounts are modelled as cf:Account; counterparty accounts are recorded as literals (cf:counterpartyIban)."@en ;
+    skos:closeMatch schema:BankAccount .
+
+cf:BankAccount
+    a owl:Class ;
+    rdfs:subClassOf cf:Account ;
+    rdfs:label "Bank account"@en , "Bankkonto"@de ;
+    skos:definition "An account held at a bank and usually identified by an IBAN."@en ;
+    skos:closeMatch schema:BankAccount .
+
+cf:CheckingAccount
+    a owl:Class ;
+    rdfs:subClassOf cf:BankAccount ;
+    rdfs:label "Checking account"@en , "Girokonto"@de ;
+    skos:definition "A current account used for day-to-day payments."@en .
+
+cf:SavingsAccount
+    a owl:Class ;
+    rdfs:subClassOf cf:BankAccount ;
+    rdfs:label "Savings account"@en , "Tagesgeld- oder Sparkonto"@de ;
+    skos:definition "An interest-bearing bank account used for saving."@en .
+
+cf:CreditCardAccount
+    a owl:Class ;
+    rdfs:subClassOf cf:Account ;
+    rdfs:label "Credit card account"@en , "Kreditkartenkonto"@de ;
+    skos:definition "A card account whose balance is settled periodically, typically from a checking account."@en ;
+    skos:closeMatch schema:CreditCard .
+
+cf:PaymentServiceAccount
+    a owl:Class ;
+    rdfs:subClassOf cf:Account ;
+    rdfs:label "Payment service account"@en , "Zahlungsdienstkonto"@de ;
+    skos:definition "An e-money or wallet account at a payment service provider such as PayPal."@en .
+
+cf:BrokerageCashAccount
+    a owl:Class ;
+    rdfs:subClassOf cf:Account ;
+    rdfs:label "Brokerage cash account"@en , "Verrechnungskonto"@de ;
+    skos:definition "The cash (clearing) account of a broker. Only cash flows are modelled; security holdings are out of scope."@en .
+
+cf:CashWallet
+    a owl:Class ;
+    rdfs:subClassOf cf:Account ;
+    rdfs:label "Cash wallet"@en , "Bargeld"@de ;
+    skos:definition "Physical cash, tracked manually or via withdrawals and receipts."@en .
+
+[] a owl:AllDisjointClasses ;
+   owl:members ( cf:BankAccount cf:CreditCardAccount cf:PaymentServiceAccount cf:BrokerageCashAccount cf:CashWallet ) .
+
+cf:CheckingAccount owl:disjointWith cf:SavingsAccount .
+
+cf:heldAt
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Account ;
+    rdfs:range cf:FinancialInstitution ;
+    rdfs:label "held at"@en , "geführt bei"@de ;
+    skos:definition "The institution that maintains the account."@en .
+
+cf:accountHolder
+    a owl:ObjectProperty ;
+    rdfs:domain cf:Account ;
+    rdfs:range cf:Party ;
+    rdfs:label "account holder"@en , "Kontoinhaber"@de ;
+    skos:definition "The party that owns the account."@en .
+
+cf:iban
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Account ;
+    rdfs:range xsd:string ;
+    rdfs:label "IBAN"@en , "IBAN"@de ;
+    skos:definition "International Bank Account Number (ISO 13616) in electronic format: upper case, no spaces."@en ;
+    cf:iso20022Path "Stmt/Acct/Id/IBAN" .
+
+cf:bic
+    a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "BIC"@en , "BIC"@de ;
+    skos:definition "Business Identifier Code (ISO 9362) of a financial institution or account."@en .
+
+cf:maskedCardNumber
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:CreditCardAccount ;
+    rdfs:range xsd:string ;
+    rdfs:label "masked card number"@en , "maskierte Kartennummer"@de ;
+    skos:definition "Card number with all but the last four digits masked, e.g. \"**** **** **** 1234\". Full card numbers are never stored."@en .
+
+cf:externalAccountId
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Account ;
+    rdfs:range xsd:string ;
+    rdfs:label "external account id"@en , "externe Konto-ID"@de ;
+    skos:definition "Identifier of the account at the provider when no IBAN exists (e.g. PayPal account e-mail hash, broker account number)."@en .
+
+cf:currency
+    a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "currency"@en , "Währung"@de ;
+    skos:definition "ISO 4217 alphabetic currency code. Used on cf:MonetaryAmount (the amount's currency), on cf:Account (the account currency) and on cf:BalanceObservation."@en ;
+    cf:iso20022Path "Ntry/Amt/@Ccy" .
+
+# =============================================================================
+#  2. Money & payments
+# =============================================================================
+
+cf:MonetaryAmount
+    a owl:Class ;
+    rdfs:label "Monetary amount"@en , "Geldbetrag"@de ;
+    skos:definition "A decimal value with a currency."@en ;
+    skos:closeMatch schema:MonetaryAmount .
+
+cf:value
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:MonetaryAmount ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "value"@en , "Wert"@de ;
+    skos:definition "The decimal value of a monetary amount. Non-negative wherever a direction is given separately."@en .
+
+cf:Direction
+    a owl:Class ;
+    owl:oneOf ( cf:Debit cf:Credit ) ;
+    rdfs:label "Direction"@en , "Richtung"@de ;
+    skos:definition "Whether money left (debit) or entered (credit) the user's account."@en ;
+    cf:iso20022Path "Ntry/CdtDbtInd" .
+
+cf:Debit
+    a owl:NamedIndividual , cf:Direction ;
+    rdfs:label "Debit (outflow)"@en , "Soll (Abgang)"@de ;
+    skos:definition "Money left the account."@en .
+
+cf:Credit
+    a owl:NamedIndividual , cf:Direction ;
+    rdfs:label "Credit (inflow)"@en , "Haben (Eingang)"@de ;
+    skos:definition "Money entered the account."@en .
+
+cf:TransactionStatus
+    a owl:Class ;
+    owl:oneOf ( cf:Booked cf:Pending ) ;
+    rdfs:label "Transaction status"@en , "Buchungsstatus"@de ;
+    skos:definition "Booking status of a transaction."@en ;
+    cf:iso20022Path "Ntry/Sts" .
+
+cf:Booked
+    a owl:NamedIndividual , cf:TransactionStatus ;
+    rdfs:label "Booked"@en , "Gebucht"@de ;
+    skos:definition "The entry is final on the account."@en .
+
+cf:Pending
+    a owl:NamedIndividual , cf:TransactionStatus ;
+    rdfs:label "Pending"@en , "Vorgemerkt"@de ;
+    skos:definition "The entry is reserved but not yet booked; it may change or disappear."@en .
+
+cf:Categorizable
+    a owl:Class ;
+    rdfs:label "Categorizable item"@en , "Kategorisierbarer Posten"@de ;
+    skos:definition "Abstract superclass of everything that carries money and can be categorised, tagged and tax-assigned: transactions, splits and document line items."@en .
+
+cf:Transaction
+    a owl:Class ;
+    rdfs:subClassOf cf:Categorizable , prov:Entity ;
+    rdfs:label "Transaction"@en , "Umsatz"@de ;
+    skos:definition "A payment entry booked (or pending) on exactly one of the user's accounts. The account is where the money came from (debit) or went to (credit); the other side is the counterparty."@en ;
+    skos:note "If a transaction has splits, analytics use the splits instead of the transaction's own category."@en ;
+    cf:iso20022Path "BkToCstmrStmt/Stmt/Ntry" .
+
+cf:InternalTransfer
+    a owl:Class ;
+    rdfs:subClassOf cf:Transaction ;
+    rdfs:label "Internal transfer"@en , "Umbuchung"@de ;
+    skos:definition "A transaction that moves money between two of the user's own accounts (e.g. card settlement, PayPal top-up, transfer to savings). Internal transfers are excluded from spending and income."@en ;
+    skos:closeMatch schema:MoneyTransfer .
+
+cf:Split
+    a owl:Class ;
+    rdfs:subClassOf cf:Categorizable ;
+    rdfs:label "Split"@en , "Aufteilung"@de ;
+    skos:definition "A part of a transaction allocated to its own category, e.g. derived from receipt line items. The split amounts of a transaction sum up to its amount."@en .
+
+cf:account
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cf:Transaction cf:BalanceObservation ) ] ;
+    rdfs:range cf:Account ;
+    rdfs:label "account"@en , "Konto"@de ;
+    skos:definition "The user's account on which the transaction is booked or the balance was observed."@en .
+
+cf:amount
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:range cf:MonetaryAmount ;
+    rdfs:label "amount"@en , "Betrag"@de ;
+    skos:definition "The amount of a transaction or split in the account currency (non-negative; see cf:direction)."@en ;
+    cf:iso20022Path "Ntry/Amt" .
+
+cf:originalAmount
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range cf:MonetaryAmount ;
+    rdfs:label "original amount"@en , "Ursprungsbetrag"@de ;
+    skos:definition "Amount in the original (foreign) currency before conversion to the account currency."@en ;
+    cf:iso20022Path "Ntry/NtryDtls/TxDtls/AmtDtls/InstdAmt/Amt" .
+
+cf:exchangeRate
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "exchange rate"@en , "Wechselkurs"@de ;
+    skos:definition "Units of account currency per unit of original currency as applied by the provider."@en .
+
+cf:fee
+    a owl:ObjectProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range cf:MonetaryAmount ;
+    rdfs:label "fee"@en , "Gebühr"@de ;
+    skos:definition "A fee charged by the provider as part of this transaction (e.g. PayPal or currency conversion fee)."@en .
+
+cf:direction
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range cf:Direction ;
+    rdfs:label "direction"@en , "Richtung"@de ;
+    skos:definition "Debit (outflow) or credit (inflow) from the account's point of view."@en ;
+    cf:iso20022Path "Ntry/CdtDbtInd" .
+
+cf:status
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range cf:TransactionStatus ;
+    rdfs:label "status"@en , "Status"@de ;
+    skos:definition "Booking status (booked or pending)."@en ;
+    cf:iso20022Path "Ntry/Sts" .
+
+cf:bookingDate
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:date ;
+    rdfs:label "booking date"@en , "Buchungstag"@de ;
+    skos:definition "Date on which the entry was booked on the account. Primary date for analytics."@en ;
+    cf:iso20022Path "Ntry/BookgDt/Dt" .
+
+cf:valueDate
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:date ;
+    rdfs:label "value date"@en , "Wertstellung"@de ;
+    skos:definition "Date from which the amount bears interest (value date)."@en ;
+    cf:iso20022Path "Ntry/ValDt/Dt" .
+
+cf:transactionDateTime
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "transaction date-time"@en , "Transaktionszeitpunkt"@de ;
+    skos:definition "Point in time of the underlying purchase or payment when known (e.g. card terminal timestamp, PayPal time)."@en .
+
+cf:counterparty
+    a owl:ObjectProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range cf:Party ;
+    rdfs:label "counterparty"@en , "Gegenpartei"@de ;
+    skos:definition "The normalised party on the other side of the transaction (result of merchant normalisation)."@en .
+
+cf:counterpartyName
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "counterparty name (raw)"@en , "Name Gegenpartei (Rohtext)"@de ;
+    skos:definition "Counterparty name exactly as delivered by the source."@en ;
+    cf:iso20022Path "Ntry/NtryDtls/TxDtls/RltdPties/Cdtr/Nm | .../Dbtr/Nm" .
+
+cf:counterpartyIban
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "counterparty IBAN"@en , "IBAN Gegenpartei"@de ;
+    skos:definition "IBAN of the counterparty account (electronic format)."@en ;
+    cf:iso20022Path "Ntry/NtryDtls/TxDtls/RltdPties/CdtrAcct/Id/IBAN | .../DbtrAcct/Id/IBAN" .
+
+cf:counterpartyBic
+    a owl:DatatypeProperty ;
+    rdfs:subPropertyOf cf:bic ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "counterparty BIC"@en , "BIC Gegenpartei"@de ;
+    skos:definition "BIC of the counterparty's institution."@en .
+
+cf:remittanceInformation
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "remittance information"@en , "Verwendungszweck"@de ;
+    skos:definition "Unstructured payment reference text."@en ;
+    cf:iso20022Path "Ntry/NtryDtls/TxDtls/RmtInf/Ustrd" .
+
+cf:bookingText
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "booking text"@en , "Buchungstext"@de ;
+    skos:definition "Bank-provided transaction type text, e.g. \"KARTENZAHLUNG\", \"DAUERAUFTRAG\"."@en ;
+    cf:iso20022Path "Ntry/AddtlNtryInf" .
+
+cf:endToEndId
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "end-to-end id"@en , "End-to-End-Referenz"@de ;
+    skos:definition "SEPA end-to-end reference assigned by the initiating party."@en ;
+    cf:iso20022Path "Ntry/NtryDtls/TxDtls/Refs/EndToEndId" .
+
+cf:mandateReference
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "mandate reference"@en , "Mandatsreferenz"@de ;
+    skos:definition "SEPA direct debit mandate reference."@en ;
+    cf:iso20022Path "Ntry/NtryDtls/TxDtls/Refs/MndtId" .
+
+cf:creditorId
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "creditor identifier"@en , "Gläubiger-ID"@de ;
+    skos:definition "SEPA creditor identifier of the direct debit creditor. Stable merchant key for direct debits."@en ;
+    cf:iso20022Path "Ntry/NtryDtls/TxDtls/RltdPties/Cdtr/Id/PrvtId/Othr/Id" .
+
+cf:merchantCategoryCode
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "merchant category code"@en , "Händlerkategorie (MCC)"@de ;
+    skos:definition "ISO 18245 merchant category code as delivered by card exports. Strong hint for categorisation."@en .
+
+cf:externalId
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "external id"@en , "externe ID"@de ;
+    skos:definition "Provider-assigned transaction identifier (e.g. PayPal transaction code)."@en .
+
+cf:relatedExternalId
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "related external id"@en , "zugehörige externe ID"@de ;
+    skos:definition "Provider id of a related transaction, used to link e.g. PayPal funding and purchase rows."@en .
+
+cf:fingerprint
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range xsd:string ;
+    rdfs:label "fingerprint"@en , "Fingerabdruck"@de ;
+    skos:definition "SHA-256 hex digest over the canonical fields of an imported transaction plus its occurrence index. Basis of idempotent imports and of the deterministic transaction IRI."@en .
+
+cf:transferCounterpart
+    a owl:ObjectProperty , owl:SymmetricProperty , owl:IrreflexiveProperty ;
+    rdfs:domain cf:InternalTransfer ;
+    rdfs:range cf:InternalTransfer ;
+    rdfs:label "transfer counterpart"@en , "Gegenbuchung"@de ;
+    skos:definition "Links the two legs of an internal transfer (debit on one own account, credit on another)."@en .
+
+cf:split
+    a owl:ObjectProperty , owl:InverseFunctionalProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range cf:Split ;
+    owl:inverseOf cf:splitOf ;
+    rdfs:label "split"@en , "Aufteilung"@de ;
+    skos:definition "A part of this transaction with its own category."@en .
+
+cf:splitOf
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Split ;
+    rdfs:range cf:Transaction ;
+    rdfs:label "split of"@en , "Teil von"@de ;
+    skos:definition "The transaction this split belongs to."@en .
+
+cf:derivedFromLineItem
+    a owl:ObjectProperty ;
+    rdfs:subPropertyOf prov:wasDerivedFrom ;
+    rdfs:domain cf:Split ;
+    rdfs:range cf:LineItem ;
+    rdfs:label "derived from line item"@en , "abgeleitet aus Position"@de ;
+    skos:definition "Receipt line items that this split aggregates."@en .
+
+cf:note
+    a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "note"@en , "Notiz"@de ;
+    skos:definition "Free-text note entered by the user."@en .
+
+cf:tag
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Categorizable ;
+    rdfs:range xsd:string ;
+    rdfs:label "tag"@en , "Schlagwort"@de ;
+    skos:definition "Free-form label for cross-cutting grouping (e.g. \"vacation-2026\")."@en .
+
+# =============================================================================
+#  3. Categorisation
+# =============================================================================
+
+cf:Category
+    a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Category"@en , "Kategorie"@de ;
+    skos:definition "A spending or income category. Categories form a SKOS hierarchy via skos:broader inside a cf:CategoryScheme."@en .
+
+cf:CategoryScheme
+    a owl:Class ;
+    rdfs:subClassOf skos:ConceptScheme ;
+    rdfs:label "Category scheme"@en , "Kategorienschema"@de ;
+    skos:definition "A taxonomy of categories. The app ships a default scheme (categories.ttl) that users may extend."@en .
+
+cf:CategoryKind
+    a owl:Class ;
+    owl:oneOf ( cf:ExpenseKind cf:IncomeKind cf:SavingsKind cf:TransferKind ) ;
+    rdfs:label "Category kind"@en , "Kategorieart"@de ;
+    skos:definition "Determines how amounts in a category enter the analytics metrics."@en .
+
+cf:ExpenseKind
+    a owl:NamedIndividual , cf:CategoryKind ;
+    rdfs:label "Expense"@en , "Ausgabe"@de ;
+    skos:definition "Counts towards spending: debits add, credits (refunds) subtract."@en .
+
+cf:IncomeKind
+    a owl:NamedIndividual , cf:CategoryKind ;
+    rdfs:label "Income"@en , "Einnahme"@de ;
+    skos:definition "Counts towards income: credits add, debits subtract."@en .
+
+cf:SavingsKind
+    a owl:NamedIndividual , cf:CategoryKind ;
+    rdfs:label "Savings"@en , "Sparen"@de ;
+    skos:definition "Money set aside or invested; excluded from spending, reported as savings."@en .
+
+cf:TransferKind
+    a owl:NamedIndividual , cf:CategoryKind ;
+    rdfs:label "Transfer"@en , "Umbuchung"@de ;
+    skos:definition "Neutral movements between own accounts; excluded from spending and income."@en .
+
+cf:categoryKind
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Category ;
+    rdfs:range cf:CategoryKind ;
+    rdfs:label "category kind"@en , "Kategorieart"@de ;
+    skos:definition "Kind of a top-level category; inherited by all narrower categories."@en .
+
+cf:category
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Categorizable ;
+    rdfs:range cf:Category ;
+    rdfs:label "category"@en , "Kategorie"@de ;
+    skos:definition "The effective category of the item (the winner among its category assignments)."@en .
+
+cf:CategoryAssignment
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Category assignment"@en , "Kategoriezuordnung"@de ;
+    skos:definition "A (possibly automatic) proposal or decision to put an item into a category, with method, confidence and explanation. Enables explainable categorisation and learning from user feedback."@en .
+
+cf:AssignmentMethod
+    a owl:Class ;
+    owl:oneOf ( cf:ByUser cf:ByRule cf:ByModel cf:ByReceipt cf:BySource ) ;
+    rdfs:label "Assignment method"@en , "Zuordnungsmethode"@de ;
+    skos:definition "How a category assignment was produced."@en .
+
+cf:ByUser    a owl:NamedIndividual , cf:AssignmentMethod ; rdfs:label "by user"@en , "durch Nutzer"@de ; skos:definition "Set manually by the user; never overwritten by automation."@en .
+cf:ByRule    a owl:NamedIndividual , cf:AssignmentMethod ; rdfs:label "by rule"@en , "durch Regel"@de ; skos:definition "Produced by a deterministic user or default rule."@en .
+cf:ByModel   a owl:NamedIndividual , cf:AssignmentMethod ; rdfs:label "by model"@en , "durch Modell"@de ; skos:definition "Predicted by the on-device machine-learning model."@en .
+cf:ByReceipt a owl:NamedIndividual , cf:AssignmentMethod ; rdfs:label "by receipt"@en , "durch Beleg"@de ; skos:definition "Derived from categorised line items of a linked document."@en .
+cf:BySource  a owl:NamedIndividual , cf:AssignmentMethod ; rdfs:label "by source"@en , "durch Quelle"@de ; skos:definition "Taken from a category supplied by the import source."@en .
+
+cf:categoryAssignment
+    a owl:ObjectProperty ;
+    rdfs:domain cf:Categorizable ;
+    rdfs:range cf:CategoryAssignment ;
+    rdfs:label "category assignment"@en , "Kategoriezuordnung"@de ;
+    skos:definition "An assignment (current or historical) for this item."@en .
+
+cf:assignedCategory
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:CategoryAssignment ;
+    rdfs:range cf:Category ;
+    rdfs:label "assigned category"@en , "zugeordnete Kategorie"@de ;
+    skos:definition "The category proposed or decided by the assignment."@en .
+
+cf:assignmentMethod
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:CategoryAssignment ;
+    rdfs:range cf:AssignmentMethod ;
+    rdfs:label "assignment method"@en , "Zuordnungsmethode"@de ;
+    skos:definition "How the assignment was produced."@en .
+
+cf:confidence
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "confidence"@en , "Konfidenz"@de ;
+    skos:definition "Calibrated probability in [0, 1] that an automatic result is correct."@en .
+
+cf:explanation
+    a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "explanation"@en , "Begründung"@de ;
+    skos:definition "Human-readable reason for an automatic result (matched rule, nearest labelled examples, ...)."@en .
+
+# =============================================================================
+#  4. Commercial documents & line items
+# =============================================================================
+
+cf:CommercialDocument
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Commercial document"@en , "Handelsbeleg"@de ;
+    skos:definition "A document that itemises a purchase: receipt, invoice or online order."@en .
+
+cf:Receipt
+    a owl:Class ;
+    rdfs:subClassOf cf:CommercialDocument ;
+    rdfs:label "Receipt"@en , "Kassenbon"@de ;
+    skos:definition "A point-of-sale receipt, usually captured as a photo or PDF."@en .
+
+cf:Invoice
+    a owl:Class ;
+    rdfs:subClassOf cf:CommercialDocument ;
+    rdfs:label "Invoice"@en , "Rechnung"@de ;
+    skos:definition "An invoice, possibly structured (EN 16931: ZUGFeRD / Factur-X / XRechnung)."@en ;
+    skos:closeMatch schema:Invoice .
+
+cf:Order
+    a owl:Class ;
+    rdfs:subClassOf cf:CommercialDocument ;
+    rdfs:label "Order"@en , "Bestellung"@de ;
+    skos:definition "An online order from an order-history export (e.g. a marketplace order with items)."@en ;
+    skos:closeMatch schema:Order .
+
+[] a owl:AllDisjointClasses ;
+   owl:members ( cf:Receipt cf:Invoice cf:Order ) .
+
+cf:LineItem
+    a owl:Class ;
+    rdfs:subClassOf cf:Categorizable ;
+    rdfs:label "Line item"@en , "Position"@de ;
+    skos:definition "One position of a commercial document."@en ;
+    skos:closeMatch schema:OrderItem .
+
+cf:DeductionLine
+    a owl:Class ;
+    rdfs:subClassOf cf:LineItem ;
+    rdfs:label "Deduction line"@en , "Abzugsposition"@de ;
+    skos:definition "A line that reduces the document total: discount, coupon or deposit return. Its line total is stored as a positive value."@en .
+
+cf:Product
+    a owl:Class ;
+    rdfs:label "Product"@en , "Produkt"@de ;
+    skos:definition "A normalised product, used to track unit prices over time across receipts."@en ;
+    skos:closeMatch schema:Product .
+
+cf:TaxBreakdown
+    a owl:Class ;
+    rdfs:label "VAT breakdown"@en , "Steueraufschlüsselung"@de ;
+    skos:definition "Net, tax and gross amounts for one VAT rate as printed on a document."@en .
+
+cf:documentedBy
+    a owl:ObjectProperty ;
+    owl:inverseOf cf:documents ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range cf:CommercialDocument ;
+    rdfs:label "documented by"@en , "belegt durch"@de ;
+    skos:definition "A document that itemises or proves this transaction."@en .
+
+cf:documents
+    a owl:ObjectProperty ;
+    rdfs:domain cf:CommercialDocument ;
+    rdfs:range cf:Transaction ;
+    rdfs:label "documents"@en , "belegt"@de ;
+    skos:definition "Inverse of cf:documentedBy."@en .
+
+cf:issuer
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:CommercialDocument ;
+    rdfs:range cf:Party ;
+    rdfs:label "issuer"@en , "Aussteller"@de ;
+    skos:definition "The merchant or party that issued the document."@en .
+
+cf:issuerName
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:CommercialDocument ;
+    rdfs:range xsd:string ;
+    rdfs:label "issuer name (raw)"@en , "Ausstellername (Rohtext)"@de ;
+    skos:definition "Issuer name as printed or extracted."@en .
+
+cf:issuerAddress
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:CommercialDocument ;
+    rdfs:range xsd:string ;
+    rdfs:label "issuer address"@en , "Ausstelleradresse"@de ;
+    skos:definition "Address of the issuing store or company as printed."@en .
+
+cf:issueDate
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:CommercialDocument ;
+    rdfs:range xsd:date ;
+    rdfs:label "issue date"@en , "Belegdatum"@de ;
+    skos:definition "Date printed on the document."@en .
+
+cf:issueDateTime
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:CommercialDocument ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "issue date-time"@en , "Belegzeitpunkt"@de ;
+    skos:definition "Date and time printed on the document, when available."@en .
+
+cf:documentNumber
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:CommercialDocument ;
+    rdfs:range xsd:string ;
+    rdfs:label "document number"@en , "Belegnummer"@de ;
+    skos:definition "Receipt, invoice or order number."@en .
+
+cf:paymentMethodText
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:CommercialDocument ;
+    rdfs:range xsd:string ;
+    rdfs:label "payment method (raw)"@en , "Zahlungsart (Rohtext)"@de ;
+    skos:definition "Payment method as printed, e.g. \"girocard\", \"BAR\"."@en .
+
+cf:totalAmount
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:CommercialDocument ;
+    rdfs:range cf:MonetaryAmount ;
+    rdfs:label "total amount"@en , "Gesamtbetrag"@de ;
+    skos:definition "Gross total to be paid."@en .
+
+cf:lineItem
+    a owl:ObjectProperty , owl:InverseFunctionalProperty ;
+    owl:inverseOf cf:partOfDocument ;
+    rdfs:domain cf:CommercialDocument ;
+    rdfs:range cf:LineItem ;
+    rdfs:label "line item"@en , "Position"@de ;
+    skos:definition "A position of the document."@en .
+
+cf:partOfDocument
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:LineItem ;
+    rdfs:range cf:CommercialDocument ;
+    rdfs:label "part of document"@en , "Teil von Beleg"@de ;
+    skos:definition "Inverse of cf:lineItem."@en .
+
+cf:position
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:LineItem ;
+    rdfs:range xsd:positiveInteger ;
+    rdfs:label "position"@en , "Positionsnummer"@de ;
+    skos:definition "1-based order of the line on the document."@en .
+
+cf:description
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:LineItem ;
+    rdfs:range xsd:string ;
+    rdfs:label "description (raw)"@en , "Bezeichnung (Rohtext)"@de ;
+    skos:definition "Line text as printed, e.g. \"BIO VOLLM. 3,8%\"."@en .
+
+cf:normalizedDescription
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:LineItem ;
+    rdfs:range xsd:string ;
+    rdfs:label "normalised description"@en , "normalisierte Bezeichnung"@de ;
+    skos:definition "Expanded, human-readable description, e.g. \"Organic whole milk 3.8%\"."@en .
+
+cf:quantity
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:LineItem ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "quantity"@en , "Menge"@de ;
+    skos:definition "Quantity in cf:unit (defaults to 1 piece)."@en .
+
+cf:unit
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:LineItem ;
+    rdfs:range xsd:string ;
+    rdfs:label "unit"@en , "Einheit"@de ;
+    skos:definition "UN/ECE Recommendation 20 unit code, e.g. \"H87\" (piece), \"KGM\" (kilogram), \"LTR\" (litre)."@en .
+
+cf:unitPrice
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:LineItem ;
+    rdfs:range cf:MonetaryAmount ;
+    rdfs:label "unit price"@en , "Einzelpreis"@de ;
+    skos:definition "Gross price per unit."@en .
+
+cf:lineTotal
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:LineItem ;
+    rdfs:range cf:MonetaryAmount ;
+    rdfs:label "line total"@en , "Positionsbetrag"@de ;
+    skos:definition "Gross amount of the line (positive; for cf:DeductionLine the amount deducted)."@en .
+
+cf:vatRate
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "VAT rate"@en , "Steuersatz"@de ;
+    skos:definition "Value added tax rate as a fraction, e.g. 0.19. Used on cf:LineItem and cf:TaxBreakdown."@en .
+
+cf:product
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:LineItem ;
+    rdfs:range cf:Product ;
+    rdfs:label "product"@en , "Produkt"@de ;
+    skos:definition "The normalised product bought in this line."@en .
+
+cf:gtin
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:Product ;
+    rdfs:range xsd:string ;
+    rdfs:label "GTIN"@en , "GTIN/EAN"@de ;
+    skos:definition "Global Trade Item Number (EAN) of the product, if known."@en .
+
+cf:warrantyUntil
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:LineItem ;
+    rdfs:range xsd:date ;
+    rdfs:label "warranty until"@en , "Garantie bis"@de ;
+    skos:definition "Last day of warranty or guarantee for the purchased item."@en .
+
+cf:taxBreakdown
+    a owl:ObjectProperty ;
+    rdfs:domain cf:CommercialDocument ;
+    rdfs:range cf:TaxBreakdown ;
+    rdfs:label "VAT breakdown"@en , "Steueraufschlüsselung"@de ;
+    skos:definition "VAT summary line of the document (one per rate)."@en .
+
+cf:netAmount
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:TaxBreakdown ;
+    rdfs:range cf:MonetaryAmount ;
+    rdfs:label "net amount"@en , "Nettobetrag"@de ;
+    skos:definition "Net amount for the VAT rate."@en .
+
+cf:taxAmount
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:TaxBreakdown ;
+    rdfs:range cf:MonetaryAmount ;
+    rdfs:label "tax amount"@en , "Steuerbetrag"@de ;
+    skos:definition "VAT amount for the rate."@en .
+
+cf:grossAmount
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:TaxBreakdown ;
+    rdfs:range cf:MonetaryAmount ;
+    rdfs:label "gross amount"@en , "Bruttobetrag"@de ;
+    skos:definition "Gross amount for the VAT rate."@en .
+
+# =============================================================================
+#  5. Tax tagging (jurisdiction-agnostic)
+# =============================================================================
+
+cf:TaxCategory
+    a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Tax category"@en , "Steuerkategorie"@de ;
+    skos:definition "A user- or rule-pack-defined class of potentially tax-relevant expenses or income (e.g. \"medical expenses\", \"work equipment\"). The ontology prescribes no jurisdiction-specific categories."@en .
+
+cf:TaxCategoryScheme
+    a owl:Class ;
+    rdfs:subClassOf skos:ConceptScheme ;
+    rdfs:label "Tax category scheme"@en , "Steuerkategorienschema"@de ;
+    skos:definition "A set of tax categories, e.g. defined by the user or supplied by an optional jurisdiction rule pack."@en .
+
+cf:jurisdiction
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:TaxCategoryScheme ;
+    rdfs:range xsd:string ;
+    rdfs:label "jurisdiction"@en , "Rechtsraum"@de ;
+    skos:definition "ISO 3166-1 alpha-2 code (or ISO 3166-2 subdivision) the scheme is intended for; absent for generic schemes."@en .
+
+cf:taxCategory
+    a owl:ObjectProperty ;
+    rdfs:domain cf:Categorizable ;
+    rdfs:range cf:TaxCategory ;
+    rdfs:label "tax category"@en , "Steuerkategorie"@de ;
+    skos:definition "Marks the item as potentially relevant for the given tax category."@en .
+
+cf:taxYear
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Categorizable ;
+    rdfs:range xsd:gYear ;
+    rdfs:label "tax year"@en , "Steuerjahr"@de ;
+    skos:definition "Tax year the item is attributed to (defaults to the year of the booking date)."@en .
+
+cf:deductibleShare
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Categorizable ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "deductible share"@en , "absetzbarer Anteil"@de ;
+    skos:definition "Fraction in [0, 1] of the amount the user considers attributable to the tax category (e.g. 0.5 for mixed private/work use). Informational only; Cashflow gives no tax advice."@en .
+
+# =============================================================================
+#  6. Provenance
+# =============================================================================
+
+cf:SourceFile
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Source file"@en , "Quelldatei"@de ;
+    skos:definition "An imported file (bank export, PDF, receipt photo) identified by its content hash."@en .
+
+cf:SourceRecord
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Source record"@en , "Quelldatensatz"@de ;
+    skos:definition "A single raw record (e.g. CSV row) inside a source file from which a transaction was derived."@en .
+
+cf:ImportRun
+    a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "Import run"@en , "Importvorgang"@de ;
+    skos:definition "One execution of a connector over a source file."@en .
+
+cf:ExtractionRun
+    a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "Extraction run"@en , "Extraktionsvorgang"@de ;
+    skos:definition "One execution of the receipt/document extraction pipeline (OCR, models) over a source file."@en .
+
+cf:Connector
+    a owl:Class ;
+    rdfs:subClassOf prov:SoftwareAgent ;
+    rdfs:label "Connector"@en , "Konnektor"@de ;
+    skos:definition "A versioned component that translates a provider's export format into this ontology."@en .
+
+cf:sourceFile
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:SourceRecord ;
+    rdfs:range cf:SourceFile ;
+    rdfs:label "source file"@en , "Quelldatei"@de ;
+    skos:definition "The file containing the record."@en .
+
+cf:fileName
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:SourceFile ;
+    rdfs:range xsd:string ;
+    rdfs:label "file name"@en , "Dateiname"@de ;
+    skos:definition "Original file name (informational; identity is the hash)."@en .
+
+cf:mediaType
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:SourceFile ;
+    rdfs:range xsd:string ;
+    rdfs:label "media type"@en , "Medientyp"@de ;
+    skos:definition "IANA media type, e.g. \"text/csv\", \"image/jpeg\"."@en .
+
+cf:sha256
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:SourceFile ;
+    rdfs:range xsd:string ;
+    rdfs:label "SHA-256"@en , "SHA-256"@de ;
+    skos:definition "Lower-case hex SHA-256 digest of the file content."@en .
+
+cf:rowNumber
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:SourceRecord ;
+    rdfs:range xsd:positiveInteger ;
+    rdfs:label "row number"@en , "Zeilennummer"@de ;
+    skos:definition "1-based physical line number of the record in the file."@en .
+
+cf:rawContent
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:SourceRecord ;
+    rdfs:range xsd:string ;
+    rdfs:label "raw content"@en , "Rohinhalt"@de ;
+    skos:definition "The record exactly as read (decoded text), kept for audit and re-processing."@en .
+
+cf:connectorId
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Connector ;
+    rdfs:range xsd:string ;
+    rdfs:label "connector id"@en , "Konnektor-ID"@de ;
+    skos:definition "Stable reverse-DNS-style identifier, e.g. \"de.sparkasse.csv-camt-v2\"."@en .
+
+cf:connectorVersion
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Connector ;
+    rdfs:range xsd:string ;
+    rdfs:label "connector version"@en , "Konnektorversion"@de ;
+    skos:definition "Semantic version of the connector definition."@en .
+
+cf:modelId
+    a owl:DatatypeProperty ;
+    rdfs:domain cf:ExtractionRun ;
+    rdfs:range xsd:string ;
+    rdfs:label "model id"@en , "Modell-ID"@de ;
+    skos:definition "Identifier of a model used in the run, as listed in the model registry."@en .
+
+cf:processedOnDevice
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:ExtractionRun ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "processed on device"@en , "auf dem Gerät verarbeitet"@de ;
+    skos:definition "False if any part of the run used an opt-in third-party service."@en .
+
+# =============================================================================
+#  7. Analytics helpers
+# =============================================================================
+
+cf:RecurringSeries
+    a owl:Class ;
+    rdfs:label "Recurring series"@en , "Wiederkehrende Zahlung"@de ;
+    skos:definition "A detected or user-defined series of periodic transactions: subscription, standing order, salary."@en .
+
+cf:recurringSeries
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:Transaction ;
+    rdfs:range cf:RecurringSeries ;
+    rdfs:label "recurring series"@en , "Serie"@de ;
+    skos:definition "The series this transaction is an occurrence of."@en .
+
+cf:periodicity
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:RecurringSeries ;
+    rdfs:range xsd:duration ;
+    rdfs:label "periodicity"@en , "Periodizität"@de ;
+    skos:definition "Typical interval as an ISO 8601 duration, e.g. P1M, P7D, P1Y."@en .
+
+cf:expectedAmount
+    a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:RecurringSeries ;
+    rdfs:range cf:MonetaryAmount ;
+    rdfs:label "expected amount"@en , "erwarteter Betrag"@de ;
+    skos:definition "Amount of the next expected occurrence."@en .
+
+cf:nextExpectedDate
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:RecurringSeries ;
+    rdfs:range xsd:date ;
+    rdfs:label "next expected date"@en , "nächstes erwartetes Datum"@de ;
+    skos:definition "Projected date of the next occurrence."@en .
+
+cf:active
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:RecurringSeries ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "active"@en , "aktiv"@de ;
+    skos:definition "False once the series is considered ended (e.g. cancelled subscription)."@en .
+
+cf:BalanceObservation
+    a owl:Class ;
+    rdfs:label "Balance observation"@en , "Saldenangabe"@de ;
+    skos:definition "An account balance reported by a source at the end of a date, used to reconcile imports and detect gaps."@en ;
+    cf:iso20022Path "Stmt/Bal" .
+
+cf:balanceDate
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:BalanceObservation ;
+    rdfs:range xsd:date ;
+    rdfs:label "balance date"@en , "Saldodatum"@de ;
+    skos:definition "Date at whose end the balance applies."@en .
+
+cf:balance
+    a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain cf:BalanceObservation ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "balance"@en , "Saldo"@de ;
+    skos:definition "Signed balance in the account currency (negative when overdrawn)."@en .

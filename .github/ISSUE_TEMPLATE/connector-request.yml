@@ -1,0 +1,63 @@
+name: Connector request
+description: Ask for support of a bank, card or payment-provider export format.
+title: "[connector] <provider> – <export format>"
+labels: ["connector"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping Cashflow understand another export format!
+
+        **Never paste real account data.** Only share the *header row* and the
+        general shape of the file. If you want to provide a sample, anonymise it
+        first (names, IBANs, amounts, references). See `connectors/README.md`.
+  - type: input
+    id: provider
+    attributes:
+      label: Provider
+      description: Bank / card issuer / payment service / broker, and country.
+      placeholder: "e.g. Volksbank Mittelhessen (DE)"
+    validations:
+      required: true
+  - type: dropdown
+    id: format
+    attributes:
+      label: File format
+      options:
+        - CSV
+        - XLSX / XLS
+        - CAMT.052 / CAMT.053 / CAMT.054 (XML)
+        - MT940 / STA
+        - OFX / QIF
+        - JSON
+        - PDF statement
+        - Other / ZIP with several files
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How do you get the export?
+      description: Menu path in web or mobile banking, available options (date range, columns, encoding).
+    validations:
+      required: true
+  - type: textarea
+    id: header
+    attributes:
+      label: Header row and preamble (no data rows!)
+      description: Copy everything above the first transaction, e.g. account/balance lines and the column header.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Particularities
+      description: Date and number formats, sign convention (negative amounts or separate debit/credit column), pending rows, multi-line fields, encoding (umlauts broken?).
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: I removed all personal data (names, IBANs, card numbers, amounts, references).
+          required: true
