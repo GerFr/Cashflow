@@ -1,0 +1,46 @@
+# --- Privacy guard ------------------------------------------------------------
+# Never commit real bank exports, receipts or databases. Put personal files in
+# one of these locations (or name them *.private.*) and they stay local.
+/data/
+/private/
+/imports/
+*.private.*
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+
+# --- Kotlin / Android (Amper, Gradle) --------------------------------------------
+build/
+.amper/
+.gradle/
+.kotlin/
+local.properties
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# --- Python ---------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+.ruff_cache/
+.pytest_cache/
+
+# --- ML artifacts (downloaded on demand, never committed) -------------------------
+*.onnx
+*.gguf
+*.safetensors
+/ml/models/
+/ml/runs/
+
+# --- OS / editors ------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

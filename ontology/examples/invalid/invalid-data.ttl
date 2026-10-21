@@ -1,0 +1,73 @@
+@prefix cf:      <https://gerfr.github.io/Cashflow/ontology/cashflow#> .
+@prefix cfcat:   <https://gerfr.github.io/Cashflow/ontology/categories#> .
+@prefix ex:      <https://example.org/cashflow-demo/> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+
+# =============================================================================
+#  Negative test data. Every resource named ex:bad-* contains a deliberate
+#  error and MUST be reported by the SHACL shapes (as violation or warning).
+#  tools/validate.py fails if any of them slips through.
+# =============================================================================
+
+ex:okAccount a cf:CheckingAccount ;
+    rdfs:label "OK account" ;
+    cf:iban "DE02120300000000202051" ;
+    cf:currency "EUR" .
+
+# IBAN with spaces and missing currency.
+ex:bad-account a cf:CheckingAccount ;
+    rdfs:label "Bad account" ;
+    cf:iban "DE02 1203 0000 0000 2020 51" .
+
+# Negative amount (sign must be expressed via cf:direction).
+ex:bad-negative-amount a cf:Transaction ;
+    cf:account ex:okAccount ;
+    cf:bookingDate "2026-10-01"^^xsd:date ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "-12.50"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Debit .
+
+# Missing account and direction; date as plain string.
+ex:bad-incomplete a cf:Transaction ;
+    cf:bookingDate "2026-10-01" ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "5.00"^^xsd:decimal ; cf:currency "EUR" ] .
+
+# Splits do not add up to the transaction amount.
+ex:bad-splits a cf:Transaction ;
+    cf:account ex:okAccount ;
+    cf:bookingDate "2026-10-02"^^xsd:date ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "30.00"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Debit ;
+    cf:split [ a cf:Split ; cf:category cfcat:Groceries ;
+               cf:amount [ a cf:MonetaryAmount ; cf:value "20.00"^^xsd:decimal ; cf:currency "EUR" ] ] ,
+             [ a cf:Split ; cf:category cfcat:Drugstore ;
+               cf:amount [ a cf:MonetaryAmount ; cf:value "5.00"^^xsd:decimal ; cf:currency "EUR" ] ] .
+
+# Merchant category code that is not four digits.
+ex:bad-mcc a cf:Transaction ;
+    cf:account ex:okAccount ;
+    cf:bookingDate "2026-10-03"^^xsd:date ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "99.00"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Debit ;
+    cf:merchantCategoryCode "54" .
+
+# Transfer legs on the same account with equal direction.
+ex:bad-transfer-a a cf:InternalTransfer ;
+    cf:account ex:okAccount ;
+    cf:bookingDate "2026-10-04"^^xsd:date ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "100.00"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Debit ;
+    cf:transferCounterpart ex:bad-transfer-b .
+
+ex:bad-transfer-b a cf:InternalTransfer ;
+    cf:account ex:okAccount ;
+    cf:bookingDate "2026-10-04"^^xsd:date ;
+    cf:amount [ a cf:MonetaryAmount ; cf:value "100.00"^^xsd:decimal ; cf:currency "EUR" ] ;
+    cf:direction cf:Debit ;
+    cf:transferCounterpart ex:bad-transfer-a .
+
+# Unmasked card number.
+ex:bad-card a cf:CreditCardAccount ;
+    rdfs:label "Card" ;
+    cf:currency "EUR" ;
+    cf:maskedCardNumber "4111111111111111" .
