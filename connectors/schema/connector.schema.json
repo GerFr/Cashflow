@@ -1,0 +1,238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gerfr.github.io/Cashflow/connectors/schema/connector.schema.json",
+  "title": "Cashflow declarative connector definition",
+  "description": "Maps a tabular export of a bank or payment provider onto the canonical Cashflow transaction record (see connectors/README.md). Version 0.1 of the connector DSL.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["dsl_version", "id", "name", "version", "status", "institution", "account_kind", "input", "locale", "detect", "fields", "direction"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "dsl_version": { "const": "0.1" },
+    "id": {
+      "description": "Stable reverse-DNS-style id: <country or 'intl'>.<provider>.<format>, e.g. de.sparkasse.csv-camt-v2.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$"
+    },
+    "name": { "type": "string", "minLength": 3 },
+    "version": {
+      "description": "Semantic version of this definition. Bump MAJOR when output for the same input changes.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "status": {
+      "description": "draft: written from documentation or memory, never checked against a real export. community: checked by at least one user against a real export. verified: community + maintained fixtures from a real (anonymised) export + recent check.",
+      "enum": ["draft", "community", "verified"]
+    },
+    "verified_against": {
+      "description": "ISO date of the last check against a real export, or null.",
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "maintainers": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "string" },
+    "institution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "country"],
+      "properties": {
+        "name": { "type": "string" },
+        "country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+        "bic": { "type": "string", "pattern": "^[A-Z0-9]{8}([A-Z0-9]{3})?$" },
+        "website": { "type": "string", "format": "uri" }
+      }
+    },
+    "account_kind": {
+      "description": "Local name of the cf:Account subclass the export belongs to.",
+      "enum": ["CheckingAccount", "SavingsAccount", "CreditCardAccount", "PaymentServiceAccount", "BrokerageCashAccount", "CashWallet"]
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "encoding", "delimiter", "header"],
+      "properties": {
+        "type": { "const": "csv" },
+        "encoding": {
+          "description": "Python/WHATWG encoding label. utf-8-sig accepts files with and without BOM.",
+          "enum": ["utf-8", "utf-8-sig", "windows-1252", "iso-8859-1", "iso-8859-15"]
+        },
+        "delimiter": { "type": "string", "minLength": 1, "maxLength": 1 },
+        "quote": { "type": "string", "minLength": 1, "maxLength": 1, "default": "\"" },
+        "header": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "row": { "description": "1-based row number of the header.", "type": "integer", "minimum": 1 },
+            "find_row_containing": {
+              "description": "The header is the first row containing all of these cells.",
+              "type": "array", "items": { "type": "string" }, "minItems": 1
+            }
+          },
+          "oneOf": [ { "required": ["row"] }, { "required": ["find_row_containing"] } ]
+        },
+        "preamble": {
+          "description": "Values read from the rows before the header (account id, balances).",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/preambleField" },
+          "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" }
+        },
+        "skip_empty_rows": { "type": "boolean", "default": true }
+      }
+    },
+    "locale": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decimal_separator", "date_formats"],
+      "properties": {
+        "decimal_separator": { "enum": [",", "."] },
+        "thousands_separator": { "enum": [".", ",", " ", "'", ""] },
+        "date_formats": {
+          "description": "strftime-style formats tried in order (%d %m %y %Y %H %M %S).",
+          "type": "array", "items": { "type": "string" }, "minItems": 1
+        }
+      }
+    },
+    "detect": {
+      "description": "Fingerprint used for automatic format detection.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_columns"],
+      "properties": {
+        "required_columns": { "type": "array", "items": { "type": "string" }, "minItems": 2 },
+        "filename_patterns": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "exclude_if": {
+          "description": "Rows matching any condition are skipped (and reported as skipped, not as errors).",
+          "type": "array", "items": { "$ref": "#/$defs/condition" }
+        }
+      }
+    },
+    "fields": {
+      "description": "Mapping of canonical transaction fields. See connectors/README.md for semantics of each field.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["booking_date", "amount", "currency"],
+      "properties": {
+        "account_iban": { "$ref": "#/$defs/fieldSpec" },
+        "account_external_id": { "$ref": "#/$defs/fieldSpec" },
+        "booking_date": { "$ref": "#/$defs/fieldSpec" },
+        "value_date": { "$ref": "#/$defs/fieldSpec" },
+        "transaction_datetime": { "$ref": "#/$defs/fieldSpec" },
+        "amount": { "$ref": "#/$defs/fieldSpec" },
+        "currency": { "$ref": "#/$defs/fieldSpec" },
+        "original_amount": { "$ref": "#/$defs/fieldSpec" },
+        "original_currency": { "$ref": "#/$defs/fieldSpec" },
+        "exchange_rate": { "$ref": "#/$defs/fieldSpec" },
+        "fee_amount": { "$ref": "#/$defs/fieldSpec" },
+        "status": { "$ref": "#/$defs/fieldSpec" },
+        "counterparty_name": { "$ref": "#/$defs/fieldSpec" },
+        "counterparty_iban": { "$ref": "#/$defs/fieldSpec" },
+        "counterparty_bic": { "$ref": "#/$defs/fieldSpec" },
+        "remittance_information": { "$ref": "#/$defs/fieldSpec" },
+        "booking_text": { "$ref": "#/$defs/fieldSpec" },
+        "creditor_id": { "$ref": "#/$defs/fieldSpec" },
+        "mandate_reference": { "$ref": "#/$defs/fieldSpec" },
+        "end_to_end_id": { "$ref": "#/$defs/fieldSpec" },
+        "merchant_category_code": { "$ref": "#/$defs/fieldSpec" },
+        "external_id": { "$ref": "#/$defs/fieldSpec" },
+        "related_external_id": { "$ref": "#/$defs/fieldSpec" },
+        "category_hint": { "$ref": "#/$defs/fieldSpec" }
+      }
+    },
+    "direction": {
+      "description": "How debit/credit is determined. Amounts are always stored as absolute values.",
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false, "required": ["mode"],
+          "properties": { "mode": { "const": "signed_amount" } }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["mode", "column", "debit_values", "credit_values"],
+          "properties": {
+            "mode": { "const": "indicator_column" },
+            "column": { "type": "string" },
+            "debit_values": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+            "credit_values": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "transform": {
+      "enum": ["trim", "collapse_whitespace", "remove_spaces", "upper", "lower", "strip_currency_symbol"]
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["column"],
+      "properties": {
+        "column": { "type": "string" },
+        "equals": { "type": "string" },
+        "in": { "type": "array", "items": { "type": "string" } },
+        "matches": { "description": "Regular expression (search semantics).", "type": "string" },
+        "empty": { "type": "boolean" },
+        "negative": { "description": "True if the column parses as a negative decimal.", "type": "boolean" }
+      },
+      "minProperties": 2
+    },
+    "valueSpec": {
+      "type": "object",
+      "properties": {
+        "column": { "type": "string" },
+        "const": { "type": "string" },
+        "from_preamble": { "type": "string" },
+        "type": { "enum": ["string", "date", "datetime", "decimal"], "default": "string" },
+        "transform": { "type": "array", "items": { "$ref": "#/$defs/transform" } },
+        "regex": { "description": "Extract the first capture group; no match yields null.", "type": "string" },
+        "map": { "description": "Translate raw values (after transforms); unmapped values are an error.", "type": "object", "additionalProperties": { "type": "string" } },
+        "null_values": { "description": "Raw values treated as missing (empty string always is).", "type": "array", "items": { "type": "string" } }
+      },
+      "oneOf": [
+        { "required": ["column"] },
+        { "required": ["const"] },
+        { "required": ["from_preamble"] }
+      ]
+    },
+    "fieldSpec": {
+      "oneOf": [
+        { "$ref": "#/$defs/valueSpec", "unevaluatedProperties": false },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cases"],
+          "properties": {
+            "cases": {
+              "description": "First case whose 'when' holds (or that has no 'when') supplies the value.",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "allOf": [ { "$ref": "#/$defs/valueSpec" } ],
+                "properties": { "when": { "$ref": "#/$defs/condition" } },
+                "unevaluatedProperties": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "preambleField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["row_matches", "cell"],
+      "properties": {
+        "row_matches": { "description": "Regular expression matched against the first cell of preamble rows.", "type": "string" },
+        "cell": { "description": "0-based cell index within the matched row.", "type": "integer", "minimum": 0 },
+        "regex": { "type": "string" },
+        "type": { "enum": ["string", "date", "decimal"], "default": "string" },
+        "transform": { "type": "array", "items": { "$ref": "#/$defs/transform" } }
+      }
+    }
+  }
+}

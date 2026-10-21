@@ -1,0 +1,380 @@
+@prefix cf:      <https://gerfr.github.io/Cashflow/ontology/cashflow#> .
+@prefix cfcat:   <https://gerfr.github.io/Cashflow/ontology/categories#> .
+@prefix skos:    <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+
+# =============================================================================
+#  Default category scheme
+#
+#  * Two levels: top-level categories carry cf:categoryKind, which narrower
+#    categories inherit.
+#  * skos:notation is the stable machine key (used in the database, in rules
+#    and in connector category hints). Labels may change, notations may not.
+#  * skos:altLabel (mostly German) holds synonyms; together with the labels and
+#    definitions they seed zero-shot ML categorisation (see docs/DESIGN.md, "Machine learning").
+#  * Uncategorised items simply have no cf:category; analytics show them as
+#    a separate "Uncategorised" bubble.
+# =============================================================================
+
+cfcat:DefaultScheme
+    a cf:CategoryScheme ;
+    skos:prefLabel "Default categories"@en , "Standardkategorien"@de ;
+    dcterms:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dcterms:modified "2026-10-19"^^xsd:date ;
+    skos:hasTopConcept
+        cfcat:Income , cfcat:Housing , cfcat:Food , cfcat:Transport , cfcat:Shopping ,
+        cfcat:Health , cfcat:Leisure , cfcat:Subscriptions , cfcat:Insurance ,
+        cfcat:Travel , cfcat:Education , cfcat:Finance , cfcat:Giving ,
+        cfcat:Savings , cfcat:Transfers .
+
+# --- Income ------------------------------------------------------------------
+
+cfcat:Income a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "INCOME" ; cf:categoryKind cf:IncomeKind ;
+    skos:prefLabel "Income"@en , "Einnahmen"@de .
+
+cfcat:Salary a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Income ;
+    skos:notation "INCOME.SALARY" ;
+    skos:prefLabel "Salary & wages"@en , "Gehalt & Lohn"@de ;
+    skos:altLabel "Lohn"@de , "Bezüge"@de , "Gehalt"@de .
+
+cfcat:SideIncome a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Income ;
+    skos:notation "INCOME.SIDE" ;
+    skos:prefLabel "Side income"@en , "Nebeneinkünfte"@de ;
+    skos:altLabel "Honorar"@de , "Nebenjob"@de .
+
+cfcat:Refunds a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Income ;
+    skos:notation "INCOME.REFUNDS" ;
+    skos:prefLabel "Reimbursements"@en , "Erstattungen"@de ;
+    skos:definition "Money paid back to you that is not a refund of a specific purchase (e.g. expense reimbursement, tax refund). Purchase refunds belong to the purchase's category."@en ;
+    skos:altLabel "Rückerstattung"@de , "Auslagenerstattung"@de , "Steuererstattung"@de .
+
+cfcat:InterestDividends a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Income ;
+    skos:notation "INCOME.INTEREST_DIVIDENDS" ;
+    skos:prefLabel "Interest & dividends"@en , "Zinsen & Dividenden"@de ;
+    skos:altLabel "Habenzinsen"@de , "Ausschüttung"@de .
+
+cfcat:OtherIncome a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Income ;
+    skos:notation "INCOME.OTHER" ;
+    skos:prefLabel "Other income"@en , "Sonstige Einnahmen"@de .
+
+# --- Housing -----------------------------------------------------------------
+
+cfcat:Housing a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "HOUSING" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Housing"@en , "Wohnen"@de .
+
+cfcat:Rent a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Housing ;
+    skos:notation "HOUSING.RENT" ;
+    skos:prefLabel "Rent"@en , "Miete"@de ;
+    skos:altLabel "Kaltmiete"@de , "Warmmiete"@de , "Hausgeld"@de .
+
+cfcat:Energy a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Housing ;
+    skos:notation "HOUSING.ENERGY" ;
+    skos:prefLabel "Energy"@en , "Energie"@de ;
+    skos:definition "Electricity, gas, heating."@en ;
+    skos:altLabel "Strom"@de , "Gas"@de , "Fernwärme"@de , "Abschlag"@de .
+
+cfcat:AncillaryCosts a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Housing ;
+    skos:notation "HOUSING.ANCILLARY" ;
+    skos:prefLabel "Ancillary costs & fees"@en , "Nebenkosten & Gebühren"@de ;
+    skos:definition "Water, waste, service charge settlements, broadcasting fee."@en ;
+    skos:altLabel "Wasser"@de , "Müllabfuhr"@de , "Nebenkostenabrechnung"@de , "Rundfunkbeitrag"@de .
+
+cfcat:Household a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Housing ;
+    skos:notation "HOUSING.HOUSEHOLD" ;
+    skos:prefLabel "Household & furnishings"@en , "Haushalt & Einrichtung"@de ;
+    skos:altLabel "Möbel"@de , "Putzmittel"@de , "Haushaltswaren"@de , "Baumarkt"@de .
+
+cfcat:Repairs a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Housing ;
+    skos:notation "HOUSING.REPAIRS" ;
+    skos:prefLabel "Repairs & maintenance"@en , "Reparaturen & Instandhaltung"@de ;
+    skos:altLabel "Handwerker"@de , "Reparatur"@de .
+
+# --- Food --------------------------------------------------------------------
+
+cfcat:Food a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "FOOD" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Food & drink"@en , "Essen & Trinken"@de .
+
+cfcat:Groceries a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Food ;
+    skos:notation "FOOD.GROCERIES" ;
+    skos:prefLabel "Groceries"@en , "Lebensmittel"@de ;
+    skos:altLabel "Supermarkt"@de , "Discounter"@de , "Wocheneinkauf"@de , "Getränkemarkt"@de .
+
+cfcat:Restaurants a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Food ;
+    skos:notation "FOOD.RESTAURANTS" ;
+    skos:prefLabel "Restaurants & cafés"@en , "Restaurants & Cafés"@de ;
+    skos:altLabel "Gaststätte"@de , "Essen gehen"@de .
+
+cfcat:Delivery a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Food ;
+    skos:notation "FOOD.DELIVERY" ;
+    skos:prefLabel "Delivery & takeaway"@en , "Lieferdienste & Takeaway"@de ;
+    skos:altLabel "Lieferdienst"@de , "Essen bestellen"@de .
+
+cfcat:Snacks a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Food ;
+    skos:notation "FOOD.SNACKS" ;
+    skos:prefLabel "Bakery, snacks & coffee"@en , "Bäcker, Snacks & Kaffee"@de ;
+    skos:altLabel "Bäckerei"@de , "Kantine"@de , "Kiosk"@de , "Coffee to go"@de .
+
+# --- Transport ---------------------------------------------------------------
+
+cfcat:Transport a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "TRANSPORT" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Transport"@en , "Mobilität"@de .
+
+cfcat:PublicTransport a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Transport ;
+    skos:notation "TRANSPORT.PUBLIC" ;
+    skos:prefLabel "Public transport"@en , "ÖPNV"@de ;
+    skos:altLabel "Deutschlandticket"@de , "Monatskarte"@de , "Nahverkehr"@de .
+
+cfcat:LongDistance a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Transport ;
+    skos:notation "TRANSPORT.LONG_DISTANCE" ;
+    skos:prefLabel "Long-distance train & bus"@en , "Fernverkehr (Bahn & Bus)"@de ;
+    skos:altLabel "Bahnticket"@de , "Fernbus"@de .
+
+cfcat:Fuel a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Transport ;
+    skos:notation "TRANSPORT.FUEL" ;
+    skos:prefLabel "Fuel & charging"@en , "Tanken & Laden"@de ;
+    skos:altLabel "Tankstelle"@de , "Ladesäule"@de .
+
+cfcat:CarCosts a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Transport ;
+    skos:notation "TRANSPORT.CAR" ;
+    skos:prefLabel "Car maintenance & parking"@en , "Kfz-Wartung & Parken"@de ;
+    skos:altLabel "Werkstatt"@de , "Parkhaus"@de , "Kfz-Steuer"@de , "TÜV"@de .
+
+cfcat:Taxi a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Transport ;
+    skos:notation "TRANSPORT.TAXI_SHARING" ;
+    skos:prefLabel "Taxi, ride & sharing"@en , "Taxi, Fahrdienste & Sharing"@de ;
+    skos:altLabel "Carsharing"@de , "E-Scooter"@de .
+
+cfcat:Bicycle a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Transport ;
+    skos:notation "TRANSPORT.BICYCLE" ;
+    skos:prefLabel "Bicycle"@en , "Fahrrad"@de .
+
+# --- Shopping ----------------------------------------------------------------
+
+cfcat:Shopping a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "SHOPPING" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Shopping"@en , "Einkäufe"@de .
+
+cfcat:Clothing a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Shopping ;
+    skos:notation "SHOPPING.CLOTHING" ;
+    skos:prefLabel "Clothing & shoes"@en , "Kleidung & Schuhe"@de .
+
+cfcat:Electronics a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Shopping ;
+    skos:notation "SHOPPING.ELECTRONICS" ;
+    skos:prefLabel "Electronics"@en , "Elektronik"@de ;
+    skos:altLabel "Elektronikmarkt"@de , "Computer"@de , "Handy"@de .
+
+cfcat:Drugstore a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Shopping ;
+    skos:notation "SHOPPING.DRUGSTORE" ;
+    skos:prefLabel "Drugstore & personal care"@en , "Drogerie & Körperpflege"@de ;
+    skos:altLabel "Drogeriemarkt"@de , "Kosmetik"@de , "Friseur"@de .
+
+cfcat:BooksMedia a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Shopping ;
+    skos:notation "SHOPPING.BOOKS_MEDIA" ;
+    skos:prefLabel "Books & media"@en , "Bücher & Medien"@de .
+
+cfcat:OtherShopping a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Shopping ;
+    skos:notation "SHOPPING.OTHER" ;
+    skos:prefLabel "Other shopping"@en , "Sonstige Einkäufe"@de ;
+    skos:altLabel "Versandhandel"@de , "Kaufhaus"@de .
+
+# --- Health ------------------------------------------------------------------
+
+cfcat:Health a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "HEALTH" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Health"@en , "Gesundheit"@de .
+
+cfcat:Pharmacy a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Health ;
+    skos:notation "HEALTH.PHARMACY" ;
+    skos:prefLabel "Pharmacy"@en , "Apotheke"@de ;
+    skos:altLabel "Medikamente"@de , "Zuzahlung"@de .
+
+cfcat:Medical a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Health ;
+    skos:notation "HEALTH.MEDICAL" ;
+    skos:prefLabel "Doctors & therapy"@en , "Ärzte & Therapie"@de ;
+    skos:altLabel "Zahnarzt"@de , "Physiotherapie"@de , "Arztrechnung"@de .
+
+cfcat:VisionAids a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Health ;
+    skos:notation "HEALTH.AIDS" ;
+    skos:prefLabel "Glasses & medical aids"@en , "Brillen & Hilfsmittel"@de ;
+    skos:altLabel "Optiker"@de , "Kontaktlinsen"@de , "Hörgerät"@de .
+
+# --- Leisure -----------------------------------------------------------------
+
+cfcat:Leisure a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "LEISURE" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Leisure"@en , "Freizeit"@de .
+
+cfcat:Events a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Leisure ;
+    skos:notation "LEISURE.EVENTS" ;
+    skos:prefLabel "Events & culture"@en , "Veranstaltungen & Kultur"@de ;
+    skos:altLabel "Kino"@de , "Konzert"@de , "Theater"@de , "Museum"@de .
+
+cfcat:Sports a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Leisure ;
+    skos:notation "LEISURE.SPORTS" ;
+    skos:prefLabel "Sports & fitness"@en , "Sport & Fitness"@de ;
+    skos:altLabel "Fitnessstudio"@de , "Verein"@de , "Schwimmbad"@de .
+
+cfcat:Hobbies a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Leisure ;
+    skos:notation "LEISURE.HOBBIES" ;
+    skos:prefLabel "Hobbies & games"@en , "Hobbys & Spiele"@de .
+
+cfcat:Nightlife a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Leisure ;
+    skos:notation "LEISURE.NIGHTLIFE" ;
+    skos:prefLabel "Bars & nightlife"@en , "Bars & Nachtleben"@de .
+
+# --- Subscriptions & communication -------------------------------------------
+
+cfcat:Subscriptions a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "SUBSCRIPTIONS" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Subscriptions & communication"@en , "Abos & Kommunikation"@de .
+
+cfcat:Streaming a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Subscriptions ;
+    skos:notation "SUBSCRIPTIONS.STREAMING" ;
+    skos:prefLabel "Streaming (video & music)"@en , "Streaming (Video & Musik)"@de .
+
+cfcat:Software a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Subscriptions ;
+    skos:notation "SUBSCRIPTIONS.SOFTWARE" ;
+    skos:prefLabel "Software & cloud"@en , "Software & Cloud"@de ;
+    skos:altLabel "App-Abo"@de , "Cloudspeicher"@de .
+
+cfcat:MobileInternet a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Subscriptions ;
+    skos:notation "SUBSCRIPTIONS.MOBILE_INTERNET" ;
+    skos:prefLabel "Mobile & internet"@en , "Mobilfunk & Internet"@de ;
+    skos:altLabel "Handyvertrag"@de , "DSL"@de , "Glasfaser"@de .
+
+cfcat:News a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Subscriptions ;
+    skos:notation "SUBSCRIPTIONS.NEWS" ;
+    skos:prefLabel "News & magazines"@en , "Zeitungen & Zeitschriften"@de .
+
+# --- Insurance ---------------------------------------------------------------
+
+cfcat:Insurance a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "INSURANCE" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Insurance"@en , "Versicherungen"@de .
+
+cfcat:LiabilityHome a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Insurance ;
+    skos:notation "INSURANCE.LIABILITY_HOME" ;
+    skos:prefLabel "Liability & household contents"@en , "Haftpflicht & Hausrat"@de .
+
+cfcat:HealthLife a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Insurance ;
+    skos:notation "INSURANCE.HEALTH_LIFE" ;
+    skos:prefLabel "Health, disability & life"@en , "Kranken-, BU- & Lebensversicherung"@de .
+
+cfcat:VehicleInsurance a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Insurance ;
+    skos:notation "INSURANCE.VEHICLE" ;
+    skos:prefLabel "Vehicle"@en , "Kfz-Versicherung"@de .
+
+cfcat:OtherInsurance a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Insurance ;
+    skos:notation "INSURANCE.OTHER" ;
+    skos:prefLabel "Other insurance"@en , "Sonstige Versicherungen"@de .
+
+# --- Travel ------------------------------------------------------------------
+
+cfcat:Travel a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "TRAVEL" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Travel"@en , "Reisen"@de .
+
+cfcat:Accommodation a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Travel ;
+    skos:notation "TRAVEL.ACCOMMODATION" ;
+    skos:prefLabel "Accommodation"@en , "Unterkunft"@de ;
+    skos:altLabel "Hotel"@de , "Ferienwohnung"@de .
+
+cfcat:Flights a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Travel ;
+    skos:notation "TRAVEL.FLIGHTS" ;
+    skos:prefLabel "Flights"@en , "Flüge"@de .
+
+cfcat:TripSpending a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Travel ;
+    skos:notation "TRAVEL.ACTIVITIES" ;
+    skos:prefLabel "Activities & spending on trips"@en , "Aktivitäten & Ausgaben unterwegs"@de .
+
+# --- Education ---------------------------------------------------------------
+
+cfcat:Education a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "EDUCATION" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Education"@en , "Bildung"@de .
+
+cfcat:Courses a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Education ;
+    skos:notation "EDUCATION.COURSES" ;
+    skos:prefLabel "Courses & tuition"@en , "Kurse & Studiengebühren"@de ;
+    skos:altLabel "Semesterbeitrag"@de , "Weiterbildung"@de .
+
+cfcat:LearningMaterials a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Education ;
+    skos:notation "EDUCATION.MATERIALS" ;
+    skos:prefLabel "Learning materials"@en , "Lernmaterial & Fachliteratur"@de .
+
+# --- Fees, interest & taxes --------------------------------------------------
+
+cfcat:Finance a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "FINANCE" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Fees, interest & taxes"@en , "Gebühren, Zinsen & Steuern"@de .
+
+cfcat:BankFees a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Finance ;
+    skos:notation "FINANCE.FEES" ;
+    skos:prefLabel "Bank & payment fees"@en , "Bank- & Zahlungsgebühren"@de ;
+    skos:altLabel "Kontoführungsgebühr"@de , "Auslandseinsatzentgelt"@de .
+
+cfcat:InterestPaid a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Finance ;
+    skos:notation "FINANCE.INTEREST" ;
+    skos:prefLabel "Interest paid"@en , "Sollzinsen"@de ;
+    skos:altLabel "Dispozinsen"@de , "Kreditzinsen"@de .
+
+cfcat:Taxes a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Finance ;
+    skos:notation "FINANCE.TAXES" ;
+    skos:prefLabel "Taxes & public charges"@en , "Steuern & Abgaben"@de ;
+    skos:altLabel "Finanzamt"@de , "Steuernachzahlung"@de .
+
+# --- Gifts & donations -------------------------------------------------------
+
+cfcat:Giving a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "GIVING" ; cf:categoryKind cf:ExpenseKind ;
+    skos:prefLabel "Gifts & donations"@en , "Geschenke & Spenden"@de .
+
+cfcat:Gifts a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Giving ;
+    skos:notation "GIVING.GIFTS" ;
+    skos:prefLabel "Gifts"@en , "Geschenke"@de .
+
+cfcat:Donations a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Giving ;
+    skos:notation "GIVING.DONATIONS" ;
+    skos:prefLabel "Donations"@en , "Spenden"@de ;
+    skos:altLabel "Mitgliedsbeitrag gemeinnützig"@de .
+
+# --- Savings & investments ---------------------------------------------------
+
+cfcat:Savings a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "SAVINGS" ; cf:categoryKind cf:SavingsKind ;
+    skos:prefLabel "Savings & investments"@en , "Sparen & Anlegen"@de .
+
+cfcat:SavingsDeposits a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Savings ;
+    skos:notation "SAVINGS.DEPOSITS" ;
+    skos:prefLabel "Savings deposits"@en , "Sparüberträge"@de ;
+    skos:definition "Transfers to savings accounts that are not tracked in Cashflow (tracked ones are internal transfers)."@en .
+
+cfcat:Investments a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Savings ;
+    skos:notation "SAVINGS.INVESTMENTS" ;
+    skos:prefLabel "Investments & savings plans"@en , "Wertpapiere & Sparpläne"@de ;
+    skos:altLabel "Sparplan"@de , "ETF"@de , "Depot"@de .
+
+# --- Transfers ---------------------------------------------------------------
+
+cfcat:Transfers a cf:Category ; skos:topConceptOf cfcat:DefaultScheme ; skos:inScheme cfcat:DefaultScheme ;
+    skos:notation "TRANSFER" ; cf:categoryKind cf:TransferKind ;
+    skos:prefLabel "Transfers"@en , "Umbuchungen"@de .
+
+cfcat:OwnAccountTransfer a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Transfers ;
+    skos:notation "TRANSFER.INTERNAL" ;
+    skos:prefLabel "Between own accounts"@en , "Zwischen eigenen Konten"@de ;
+    skos:altLabel "Übertrag"@de , "PayPal-Aufladung"@de .
+
+cfcat:CashWithdrawal a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Transfers ;
+    skos:notation "TRANSFER.CASH" ;
+    skos:prefLabel "Cash withdrawal"@en , "Bargeldabhebung"@de ;
+    skos:altLabel "Geldautomat"@de , "Bargeldauszahlung"@de .
+
+cfcat:CardSettlement a cf:Category ; skos:inScheme cfcat:DefaultScheme ; skos:broader cfcat:Transfers ;
+    skos:notation "TRANSFER.CARD_SETTLEMENT" ;
+    skos:prefLabel "Credit card settlement"@en , "Kreditkartenabrechnung"@de .

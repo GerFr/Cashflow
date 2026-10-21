@@ -1,0 +1,32 @@
+# Spend per top-level expense category in a date range: the input of the
+# period bubble view. Splits replace their parent transaction;
+# credits in an expense category (refunds) reduce spend.
+# Edit the VALUES line to choose the period.
+
+PREFIX cf:   <https://gerfr.github.io/Cashflow/ontology/cashflow#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?top (SAMPLE(?label) AS ?name) (SUM(?signed) AS ?spend) (COUNT(?item) AS ?items)
+WHERE {
+  VALUES (?from ?to) { ("2026-10-01"^^xsd:date "2026-10-31"^^xsd:date) }
+  {
+    ?item a cf:Transaction ;
+          cf:category ?cat ; cf:bookingDate ?d ; cf:direction ?dir ;
+          cf:amount/cf:value ?v .
+    FILTER NOT EXISTS { ?item cf:split ?anySplit }
+  } UNION {
+    ?tx a cf:Transaction ;
+        cf:split ?item ; cf:bookingDate ?d ; cf:direction ?dir .
+    ?item cf:category ?cat ; cf:amount/cf:value ?v .
+  }
+  FILTER (?d >= ?from && ?d <= ?to)
+  ?cat skos:broader* ?top .
+  ?top skos:topConceptOf ?scheme ;
+       cf:categoryKind cf:ExpenseKind ;
+       skos:prefLabel ?label .
+  FILTER (lang(?label) = "en")
+  BIND (IF(?dir = cf:Debit, ?v, -?v) AS ?signed)
+}
+GROUP BY ?top
+ORDER BY DESC(?spend)
