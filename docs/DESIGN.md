@@ -57,7 +57,7 @@ The UI stays thin. Domain logic lives in `shared/` and is unit-tested without An
 ## Storage
 
 * One SQLite database per profile, encrypted with SQLCipher, WAL mode. Key in the Android Keystore, optionally wrapped by a passphrase.
-* Main tables: `accounts`, `transactions`, `splits`, `categories`, `category_assignments`, `rules`, `tags`, `source_files`, `source_records`, `import_runs`, `documents`, `blobs`, `op_log`, `settings`.
+* Main tables: `accounts`, `transactions`, `splits`, `categories`, `category_assignments`, `rules`, `tags`, `balance_observations`, `source_files`, `source_records`, `import_runs`, `documents`, `blobs`, `op_log`, `settings`, plus `balance_daily` (derived, see Balances).
 * `op_log` gives undo, an audit trail and later the sync feed.
 * Receipt images are encrypted files addressed by their hash.
 
@@ -122,15 +122,37 @@ Items of internal transfers are excluded from everything below.
 | **Savings(P)** | Σ *s(i)* over items with *k(i)* = Savings. |
 | **Net cash flow(P)** | Σ credits − Σ debits over all non-transfer items. |
 | **Savings rate(P)** | (Income − spend − uncategorised spend) / Income. |
+| **Money in(P)** | Σ *a* over credits in *P*. |
+| **Money out(P)** | Σ *a* over debits in *P*. |
+| **Transfers(P)** | Σ *a* over the debit legs of internal transfers in *P* (the one metric that uses them; shown grey). |
+| **Balance(A, t)** | Balance of account *A* at the end of day *t* (see Balances). |
+| **Liquid net worth(t)** | Σ Balance(A, t) over all *liquid* accounts *A*, converted to the base currency. |
+
+**Liquid accounts** are checking, savings, payment-service (PayPal), credit-card (usually negative), broker cash and cash-wallet accounts. The user can exclude an account. Securities positions are not part of liquid net worth: buying securities is money *out* with kind Savings ("Saving & investing").
+
+**Check:** for a period in which every liquid account is fully imported, Liquid net worth(end) − Liquid net worth(start) = Money in − Money out. A difference points to a missing import or a wrong balance and is shown as a warning.
 
 **Week** = ISO 8601 week (Monday–Sunday); **month** = calendar month. The SPARQL queries in [`ontology/queries/`](../ontology/queries/) implement Spend for the example data.
 
-## Bubbles
+## Balances
 
-* Packed circles: top-level category → subcategory → merchant. Area ∝ amount (radius ∝ √amount). Categories under 1 % go into "Other"; uncategorised spend is its own bubble that links to the inbox.
-* Bubbles keep their identity (category notation) when the period changes and animate between periods.
-* Stable, colour-blind-safe colour per top-level category; never red/green only.
-* Every chart has a table alternative.
+* **Anchors:** balances from export files (preamble or CAMT closing balances, already read by the connectors as `balances`) are stored in `balance_observations`. Where an export has none, the user enters an opening balance for the account.
+* **Computation:** Balance(A, t) = nearest anchor + Σ signed amounts of booked transactions between the anchor and *t*. Anchors before and after *t* must agree; if they don't, the gap is flagged (usually a missing import).
+* **Speed:** `balance_daily(account, day, balance)` is derived from the transactions and anchors and updated incrementally after each import or edit, so the net-worth chart and donut need no recomputation.
+* Pending transactions are not part of balances; they are shown separately.
+
+## Views
+
+Style: dark theme, large numbers, a horizontal period strip (… Aug · Sep · **Oct**) for single periods and range tabs (1D · 1W · 1M · 1Y · Max) for line charts, similar to Trade Republic. Every chart has a table alternative; colours are stable, colour-blind-safe and never red/green only.
+
+1. **Net worth.** Line chart of Liquid net worth(t) for the selected range, with a draggable marker that shows date and value. Tapping a date opens a **donut chart** of Balance(A, t) per liquid account (negative balances such as a credit card are listed below the donut). Tapping a slice opens the account: its balance line and transactions.
+2. **Movements over time.** For longer ranges: Money in and Money out per week, month or year (bars, or lines for ranges above two years), with the net result; transfers as a grey series that can be hidden.
+3. **Movement bubbles** for one period (day, week, month, year):
+   * Level 1: *Income*, *Spending*, *Saving & investing* and a grey *Transfers* bubble; area ∝ amount (radius ∝ √amount).
+   * Tap → categories of that kind → subcategories → merchants → transactions (a breadcrumb leads back). Under 1 % share goes into "Other"; uncategorised items get their own bubble that links to the inbox.
+   * Below the bubbles: a list with colour dot, name, amount and share of the parent.
+   * Bubbles keep their identity (category notation) when the period changes and animate to the new sizes.
+4. **Trends.** Line charts for net worth, income and spending over months and years, using the same range tabs as the net-worth chart.
 
 ## Machine learning
 

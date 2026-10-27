@@ -2,7 +2,7 @@
 
 ## Vision
 
-**Cashflow shows where my money goes: privately, on my own devices.** It reads the exports of my banks, cards and payment services, puts them into one consistent data model, and shows my spending per category as **bubbles per week and month**. Receipts photographed with the phone are read on the device and split the matching payment into categories. There is no server: the data stays on my phone (and later my laptop).
+**Cashflow shows where my money is and where it goes: privately, on my own devices.** It reads the exports of my banks, cards and payment services, puts them into one consistent data model, and shows my **liquid net worth** over time and my money movements per category as **bubbles per day, week and month**. Receipts photographed with the phone are read on the device and split the matching payment into categories. There is no server: the data stays on my phone (and later my laptop).
 
 ## Why
 
@@ -22,6 +22,20 @@ One person in Germany with several accounts (two checking accounts, a credit car
 3. **Monthly import:** import the exports of all providers; duplicates are skipped, PayPal and card payments are linked to their bank entries.
 4. **Supermarket receipt:** photograph it; the matching bank payment is split into groceries, drugstore and household.
 5. **Own analysis:** export everything and explore it in a Python notebook.
+6. **Net worth check:** see how my liquid net worth developed over the last year; tap a date and see how it was spread over my accounts on that day.
+7. **Where did the money go:** pick October, tap the "Spending" bubble, then "Food", then "Groceries", down to the single payments.
+
+## Main views
+
+The visual style follows modern banking apps (e.g. Trade Republic): dark background, large numbers, a horizontal period strip (… Aug · Sep · **Oct**) or range tabs (1D · 1W · 1M · 1Y · Max).
+
+1. **Net worth.** *Liquid net worth* = the sum of the balances of all my cash-like accounts (checking, savings, PayPal, credit card as a negative balance, broker cash, cash wallet) at a point in time. Securities are not included.
+   * A **line chart** for any timeframe (1W, 1M, 1Y, Max, custom) answers "what was my net worth at that time?". Dragging along the line shows the value at each date.
+   * Tapping a date opens a **donut chart** of that date: one slice per account with its balance. Tapping a slice opens the account (its balance line and transactions).
+2. **Money movements.** Money in and money out per period. Transfers between my own accounts don't change my net worth: they are shown **greyed out**, can be hidden, and are never counted as in or out.
+   * **Longer timeframes:** one chart with *in* and *out* per week, month or year (bars or lines), with the net result.
+   * **Bubbles for one period** (day, week, month, year): top-level bubbles *Income*, *Spending*, *Saving & investing* and a grey *Transfers* bubble. Tapping a bubble opens its categories as new bubbles, then subcategories, merchants and finally the transactions. Below the bubbles, a list shows each item with its amount and share.
+3. **Long-term trends.** Line charts for net worth, income and spending over months and years, with the same range tabs.
 
 ## Features
 
@@ -34,8 +48,11 @@ One person in Germany with several accounts (two checking accounts, a credit car
 - [ ] New banks can be added with a YAML file and a synthetic sample file, no code
 - [ ] Encrypted local database; nothing leaves the phone
 - [ ] Default categories (English/German), rules, manual correction, splits, tags and notes
-- [ ] **Spending bubbles** per week and month with drill-down (category → subcategory → merchant → transactions)
-- [ ] Comparison with a typical week/month; trends per category
+- [ ] Account balances over time (from balances in the exports, or an opening balance I enter)
+- [ ] **Liquid net worth** line chart for any timeframe; donut chart of my accounts for a chosen date
+- [ ] **Money movements**: in/out chart for longer timeframes; transfers between own accounts greyed out
+- [ ] **Bubbles** per day, week, month and year with drill-down (income/spending/investing → category → subcategory → merchant → transactions)
+- [ ] Long-term line charts for net worth, income and spending; comparison with a typical week/month
 - [ ] **Receipt capture** with the camera; on-device text recognition; match to the bank payment; split into categories
 
 ### Next (P4–P5)

@@ -2,7 +2,7 @@
 
 **See where your money goes: privately, on your own devices.**
 
-Cashflow is a planned open-source, local-first personal finance app. It reads the exports of your banks, cards and payment services, puts them into one consistent data model, and shows your spending per category as **bubbles per week and month**. Receipts photographed with your phone are read on the device and split the matching payment. There is no server.
+Cashflow is a planned open-source, local-first personal finance app. It reads the exports of your banks, cards and payment services, puts them into one consistent data model, and shows your **liquid net worth** over time and where your money moves as **bubbles per day, week and month**. Receipts photographed with your phone are read on the device and split the matching payment. There is no server.
 
 > **Status: planning → phase P0.** Android first, built with Kotlin Multiplatform and Compose. No app code yet; this repository holds the docs, the ontology and the connector definitions with their tests.
 
