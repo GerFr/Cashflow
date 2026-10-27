@@ -1,0 +1,102 @@
+{
+  "connector": {
+    "id": "de.dkb.csv-2023",
+    "version": "0.1.0"
+  },
+  "file_sha256": "e193f9050333d8406bb3bbc4b98b6661252232f56cdea8380e73f1bec80a1507",
+  "accounts": [
+    "DE02120300000000202051"
+  ],
+  "balances": [
+    {
+      "account": "DE02120300000000202051",
+      "date": "2026-10-08",
+      "balance": "2345.67"
+    }
+  ],
+  "skipped_rows": [],
+  "transactions": [
+    {
+      "id": "a3b538c8-34fc-8440-b882-23acf721f912",
+      "fingerprint": "657bf2fb52bc2d9cfdadc2f1182dd653f3299f9df4541445b649957d874c5836",
+      "row_number": 6,
+      "account_iban": "DE02120300000000202051",
+      "booking_date": "2026-10-08",
+      "value_date": "2026-10-08",
+      "direction": "debit",
+      "amount": "89.90",
+      "currency": "EUR",
+      "status": "pending",
+      "counterparty_name": "Musterbahn GmbH",
+      "counterparty_iban": "DE02300209000106531065",
+      "remittance_information": "Ticket 2026-10-08 Köln–Berlin",
+      "booking_text": "Ausgang"
+    },
+    {
+      "id": "7ec4e68e-4199-876f-8fe3-1bd72b433a5c",
+      "fingerprint": "ce12adfc2890654ef34ee793e489d96da3e3ef159dbd41a565368501d4625772",
+      "row_number": 7,
+      "account_iban": "DE02120300000000202051",
+      "booking_date": "2026-10-07",
+      "value_date": "2026-10-07",
+      "direction": "debit",
+      "amount": "3.20",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Bäckerei Kornblume",
+      "remittance_information": "Kartenzahlung girocard",
+      "booking_text": "Ausgang"
+    },
+    {
+      "id": "9b33b863-1ae4-8c05-b14e-868ea2dbcff5",
+      "fingerprint": "d943bcf6cce7f9d6c6f1682ffbe37df7d6755313a4f33e116420e502e1e0385f",
+      "row_number": 8,
+      "account_iban": "DE02120300000000202051",
+      "booking_date": "2026-10-06",
+      "value_date": "2026-10-06",
+      "direction": "credit",
+      "amount": "45.00",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Erika Musterfrau",
+      "counterparty_iban": "DE75512108001245126199",
+      "remittance_information": "Danke fürs Auslegen – Konzertkarten",
+      "booking_text": "Eingang"
+    },
+    {
+      "id": "9572b1ec-c44d-840e-9b41-ffabd032a316",
+      "fingerprint": "ccb87f5b8f6798df324fb88dc8801dde0054986080c9199436d23ed51678da71",
+      "row_number": 9,
+      "account_iban": "DE02120300000000202051",
+      "booking_date": "2026-10-05",
+      "value_date": "2026-10-05",
+      "direction": "debit",
+      "amount": "31.50",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Stadtwerke Musterstadt",
+      "counterparty_iban": "DE02200505501015871393",
+      "remittance_information": "Abschlag Wasser 10/2026",
+      "booking_text": "Ausgang",
+      "creditor_id": "DE98ZZZ09999999999",
+      "mandate_reference": "MREF-WASSER-77",
+      "end_to_end_id": "E2E-WASSER-1026"
+    },
+    {
+      "id": "2a4f98f5-43c0-87d2-ad6f-7bf1facedf11",
+      "fingerprint": "c7a44a8a37652900d1fb761a01c9e9748ae5b8e0f5c5a4c85cdd9859a6cce8dc",
+      "row_number": 10,
+      "account_iban": "DE02120300000000202051",
+      "booking_date": "2026-10-01",
+      "value_date": "2026-10-01",
+      "direction": "credit",
+      "amount": "3210.00",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "ACME Software GmbH",
+      "counterparty_iban": "DE89370400440532013000",
+      "remittance_information": "Gehalt 10/2026",
+      "booking_text": "Eingang"
+    }
+  ]
+}
