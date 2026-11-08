@@ -4,8 +4,9 @@ This module is an *executable specification*: it defines precisely how a
 connector definition (connectors/definitions/*.yaml) turns an export file into
 canonical transaction records and RDF. CI runs it over every fixture.
 
-The app's Kotlin connector engine must produce identical canonical JSON for
-every fixture in ``connectors/fixtures`` (the connector conformance suite).
+It becomes the import engine of the Cashflow service in P0; any later engine
+must produce identical canonical JSON for every fixture in
+``connectors/fixtures`` (the connector conformance suite).
 """
 
 from __future__ import annotations

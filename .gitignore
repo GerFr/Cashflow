@@ -5,13 +5,14 @@
 /private/
 /imports/
 *.private.*
+/temp/
 *.sqlite
 *.sqlite3
 *.db
 *.db-wal
 *.db-shm
 
-# --- Kotlin / Android (Amper, Gradle) --------------------------------------------
+# --- Kotlin / Android (later app: Amper, Gradle) ---------------------------------
 build/
 .amper/
 .gradle/
@@ -30,6 +31,11 @@ venv/
 .ipynb_checkpoints/
 .ruff_cache/
 .pytest_cache/
+.coverage
+htmlcov/
+.env
+.env.*
+!.env.example
 
 # --- ML artifacts (downloaded on demand, never committed) -------------------------
 *.onnx

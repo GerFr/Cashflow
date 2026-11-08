@@ -21,6 +21,6 @@ Namespaces: `cf` = `https://gerfr.github.io/Cashflow/ontology/cashflow#`, `cfcat
 
 Receipts, tax tagging and analytics helpers are left out until those features are built; the earlier drafts are in the git tag `archive/m0-drafts`.
 
-The files are not checked in CI yet. Once the app exports RDF (phase P5), exports will be validated against `shapes.ttl`. To explore now, open `cashflow.ttl` in [Protégé](https://protege.stanford.edu/) or query the example with rdflib.
+The files are not checked in CI yet. Once the app exports RDF (phase P4), exports will be validated against `shapes.ttl`. To explore now, open `cashflow.ttl` in [Protégé](https://protege.stanford.edu/) or query the example with rdflib.
 
 Licence: [CC BY 4.0](LICENSE).

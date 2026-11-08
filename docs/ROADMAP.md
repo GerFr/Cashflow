@@ -1,22 +1,20 @@
 # Roadmap
 
-Android first, one phase at a time. Durations are rough guesses for evenings and weekends. Features per phase: [PRODUCT.md](PRODUCT.md).
+A local Python service first, one phase at a time; a phone app only if the tool proves useful. Durations are rough guesses for evenings and weekends. Features per phase: [PRODUCT.md](PRODUCT.md).
 
 | Phase | Goal | Done when |
 |---|---|---|
-| **P0 Setup** (≈1 week) | JDK 21 + Android SDK in WSL, Amper, IntelliJ IDEA; hello-world Compose app on the phone; CI builds the APK and runs the tests. Two-day spike: Amper + Compose + database library + SQLCipher. | An APK built in CI installs on the phone and opens an encrypted database. |
-| **P1 Core & import** (2–4 weeks) | Domain types (`Money`, `Account`, `Transaction`, `Category`); encrypted database with `op_log`; Kotlin connector engine (port of `tools/connector_ref.py`); import via share sheet / file picker with preview and de-duplication; balances from exports and opening balances stored as anchors. | The Kotlin engine reproduces every `connectors/fixtures/*/expected.json`; sharing a Sparkasse CSV shows its transactions; re-importing adds nothing; account balances match the bank's. |
-| **P2 See your money** (4–6 weeks) | Default categories from `ontology/categories.ttl`; rules and manual correction; splits; the [main views](DESIGN.md#views): net-worth line chart with per-date account donut, in/out chart over time, movement bubbles with drill-down (day/week/month/year), trend lines; search. | Real data on the phone: net worth for any date, monthly bubbles down to single payments; metrics and the net-worth check match [DESIGN.md](DESIGN.md#metric-definitions). |
-| **P3 Receipts v1** (≈4 weeks) | Camera capture and crop; encrypted image storage; OCR on the device; total, date and merchant parsed; matched to the transaction; split into categories. | Photographing a receipt splits the matching payment. |
-| **P4 Connectors & linking** | PayPal, credit card, ING, N26, …; transfers between own accounts; PayPal/card linking; mapping wizard; anonymiser. | Combined data from all sources shows no double counting. |
-| **P5 Smarter** | On-device categorisation model (trained in `ml/`); subscriptions, anomalies, forecast; CSV and RDF export (RDF checked against the SHACL shapes in CI). | ≥ 90 % of automatic categories correct on own data; export passes SHACL. |
-| **P6 Laptop & sync** | Compose Desktop app; encrypted backup file; sync between phone and laptop. | Phone and laptop show the same data. |
-| **P7 iOS & release** | iOS build (needs a Mac or a CI Mac runner); signed releases; F-Droid build without ML Kit. | Public release. |
-| **Later** | Tax tagging, line-item analytics, Knowledge Graph Manager backend, live bank access, budgets. | — |
+| **P0 Skeleton** (a few evenings) | uv project `cashflow/` (package layout `src/cashflow`); the connector engine moved from `tools/` into the package; golden connector tests in pytest; `GET /api/health` and `POST /api/parse` (parse only, nothing stored); UI shell at `/app/` with the tabs and an upload that shows the parsed rows; CI on uv. | CI is green; `uv run dev` → `http://127.0.0.1:8000/app/` opens in the browser; uploading a fixture shows the records of its `expected.json`. |
+| **P1 Import & storage** (1–2 weeks) | SQLite database with `op_log`; import with preview and commit; de-duplication, pending → booked; accounts; balance anchors from exports and opening balances; `balance_daily`. | Importing the Sparkasse and DKB files twice adds nothing the second time; account balances match the bank's. |
+| **P2 See your money** (2–4 weeks) | Default categories from `ontology/categories.ttl`; rules and manual correction (Inbox); splits; the [main views](DESIGN.md#views): net-worth line chart with per-date account donut, in/out chart over time, movement bubbles with drill-down (day/week/month/year), trend lines; search. | Real data: net worth for any date, monthly bubbles down to single payments; metrics and the net-worth check match [DESIGN.md](DESIGN.md#metric-definitions). |
+| **P3 More sources** | PayPal, credit card, broker, ING, N26, …; transfers between own accounts; PayPal/card linking; mapping helper for unknown CSVs; anonymiser. | Combined data from all sources shows no double counting. |
+| **P4 Smarter** | Categorisation model trained on own corrections; subscriptions, anomalies, forecast; CSV and RDF export (RDF checked against the SHACL shapes in CI). | ≥ 90 % of automatic categories correct on own data; export passes SHACL. |
+| **Later** | Phone app (Kotlin Multiplatform, Android first — [DECISIONS.md](DECISIONS.md) #8), receipts with OCR, sync, tax tagging, line-item analytics, Knowledge Graph Manager backend, live bank access, budgets. | — |
 
 ## Next actions (P0)
 
-1. Install JDK 21 (SDKMAN) and the Android command-line tools in WSL; pair the phone with `adb pair` (wireless debugging).
-2. Create the Amper project (`shared/`, `android-app/`) and get a Compose screen onto the phone.
-3. Spike: database library + SQLCipher under Amper. If it fails within two days, switch to Gradle and update [DECISIONS.md](DECISIONS.md).
-4. Extend CI: build the APK, run the Kotlin tests, keep the Python connector check.
+1. uv is installed in WSL (`uv --version`); `uv python install 3.13` if needed.
+2. `uv init --package cashflow`; add FastAPI, Uvicorn, pydantic-settings, SQLAlchemy, PyYAML, jsonschema, rdflib; dev group: pytest, pytest-cov, httpx, ruff.
+3. Move `tools/connector_ref.py` into `cashflow/src/cashflow/connectors/engine.py` and `tools/validate.py` into `test/unit/test_connectors.py`; delete `tools/`.
+4. App factory with `/api`, `/` → `/app/` and the static UI; first endpoints; e2e tests for API and UI.
+5. Switch CI to `astral-sh/setup-uv`: `uv sync --frozen`, ruff, `uv run pytest --cov`.

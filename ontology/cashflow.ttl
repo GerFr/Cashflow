@@ -589,7 +589,7 @@ cf:AssignmentMethod
 
 cf:ByUser    a owl:NamedIndividual , cf:AssignmentMethod ; rdfs:label "by user"@en , "durch Nutzer"@de ; skos:definition "Set manually by the user; never overwritten by automation."@en .
 cf:ByRule    a owl:NamedIndividual , cf:AssignmentMethod ; rdfs:label "by rule"@en , "durch Regel"@de ; skos:definition "Produced by a deterministic user or default rule."@en .
-cf:ByModel   a owl:NamedIndividual , cf:AssignmentMethod ; rdfs:label "by model"@en , "durch Modell"@de ; skos:definition "Predicted by the on-device machine-learning model."@en .
+cf:ByModel   a owl:NamedIndividual , cf:AssignmentMethod ; rdfs:label "by model"@en , "durch Modell"@de ; skos:definition "Predicted by the local machine-learning model."@en .
 cf:BySource  a owl:NamedIndividual , cf:AssignmentMethod ; rdfs:label "by source"@en , "durch Quelle"@de ; skos:definition "Taken from a category supplied by the import source."@en .
 
 cf:categoryAssignment

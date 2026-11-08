@@ -1,6 +1,6 @@
 # Kotlin for a Java developer
 
-Short notes for building Cashflow coming from Java, Maven and Python. Check the official docs for exact, current syntax, especially for Amper, which is still evolving.
+For the **later phone-app phase** ([DECISIONS.md](../DECISIONS.md) #8); the current service is Python. Short notes for building the app coming from Java, Maven and Python. Check the official docs for exact, current syntax, especially for Amper, which is still evolving.
 
 ## Java → Kotlin
 

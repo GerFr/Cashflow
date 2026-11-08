@@ -22,7 +22,7 @@ A definition says how to decode the file (`input`: encoding, delimiter, header r
 
 * Annotated example: [`definitions/de.dkb.csv-2023.yaml`](definitions/de.dkb.csv-2023.yaml).
 * Every key is described in the [JSON Schema](schema/connector.schema.json); the `# yaml-language-server` line gives completion in editors.
-* The exact semantics are defined by the reference interpreter [`tools/connector_ref.py`](../tools/connector_ref.py). The app's Kotlin engine must produce the same `expected.json` for every fixture.
+* The exact semantics are defined by the reference interpreter [`tools/connector_ref.py`](../tools/connector_ref.py). It becomes the service's import engine in P0; any later engine (e.g. in a phone app) must produce the same `expected.json` for every fixture.
 
 ## The canonical record
 

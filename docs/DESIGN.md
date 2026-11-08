@@ -4,7 +4,7 @@ How Cashflow is built. Reasons for the big choices are in [DECISIONS.md](DECISIO
 
 ## Rules that always hold
 
-1. **Money is never a floating-point number.** Amounts are `Long` minor units plus an ISO 4217 currency code; RDF exports use `xsd:decimal`.
+1. **Money is never a floating-point number.** Amounts are integer minor units plus an ISO 4217 currency code (`Decimal` only while parsing); RDF exports use `xsd:decimal`.
 2. **Imports are deterministic.** The same file gives the same transaction IDs on every device.
 3. **Every write goes through the operation log**, in the same database transaction as the table change.
 4. **No network access without an explicit user action**, and every access is logged locally.
@@ -13,53 +13,60 @@ How Cashflow is built. Reasons for the big choices are in [DECISIONS.md](DECISIO
 
 | Area | Choice |
 |---|---|
-| Language | Kotlin 2.x |
-| UI | Compose Multiplatform (Android first; desktop and iOS later) |
-| Build | JetBrains Amper; Gradle Kotlin DSL as fallback |
-| Database | SQLite encrypted with SQLCipher, via SQLDelight or Room KMP (decided in P0) |
-| Libraries | kotlinx-serialization, kotlinx-datetime, kaml (YAML), Koin |
-| Camera / OCR | CameraX; ML Kit text recognition to start, PaddleOCR via ONNX Runtime later |
-| ML | ONNX Runtime on the device; models trained in a Python workbench (`ml/`) |
-| Tooling | Python 3.13: connector reference interpreter and golden tests (`tools/`) |
+| Language | Python 3.13, managed with uv (package layout `cashflow/src/cashflow`) |
+| Service | FastAPI + Uvicorn; settings with pydantic-settings (`CASHFLOW_*` env vars, `.env`) |
+| Database | SQLite via SQLAlchemy 2.0 |
+| Frontend | Static files served by FastAPI under `/app/`: plain JavaScript, no build step; Apache ECharts (lines, bars, donut) and d3-hierarchy (bubble layout), vendored, no CDN |
+| Libraries | PyYAML + jsonschema (connectors), rdflib (categories, RDF export) |
+| Tests | pytest, httpx (`ASGITransport`), pytest-cov; ruff |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  files[/"Bank exports (CSV, later CAMT…)"/] --> con
-  camera[/"Camera"/] --> rec
-  subgraph app["Android app"]
-    ui["Compose UI<br/>bubbles · inbox · receipts"]
-    subgraph shared["shared module (common Kotlin)"]
+  files[/"Bank exports (CSV, later CAMT…)"/] --> ui
+  subgraph svc["cashflow service (127.0.0.1)"]
+    ui["/app/ static frontend<br/>net worth · movements · bubbles · trends · import · inbox"]
+    api["/api JSON (FastAPI)"]
+    subgraph core["domain (no web code)"]
       con["connectors<br/>detect · parse · map"]
       enr["categorisation<br/>rules · model"]
-      rec["receipts<br/>OCR · match · split"]
-      ana["analytics<br/>metrics · bubbles"]
-      store[("storage<br/>SQLCipher · op-log · blobs")]
+      ana["balances · metrics"]
     end
-    ui <--> ana
+    store[("SQLite<br/>tables · op_log")]
+    ui <--> api
+    api --> con --> store
+    api --> enr --> store
+    api --> ana
+    store --> ana
   end
-  con --> store --> ana
-  enr --> store
-  rec --> store
   store --> out[/"CSV · RDF export"/]
 ```
 
 ```
-shared/        common code: domain, storage, connectors, categorisation, analytics, receipts
-android-app/   Compose UI, import via share sheet / file picker, camera
-desktop-app/   later: Compose Desktop
-ml/            later: Python workbench for training and exporting models
+cashflow/                  uv project
+  pyproject.toml           scripts: dev (reload), prod
+  src/cashflow/
+    app.py                 app factory; /api router, / → /app/, static UI
+    run_dev.py run_prod.py
+    connectors/engine.py   connector interpreter
+    db.py                  SQLAlchemy models
+    service/api.py         HTTP endpoints
+    service/importer.py    import pipeline
+    balances.py metrics.py
+    utils/config.py        settings
+    resources/ui/          index.html, assets/ (app.css, js/, vendor/)
+  test/                    unit/, e2e/, support/
 ```
 
-The UI stays thin. Domain logic lives in `shared/` and is unit-tested without Android.
+Endpoints stay thin: domain modules (connectors, importer, balances, metrics) don't import FastAPI and are unit-tested directly. The frontend talks only to `/api` (all `fetch` calls in `assets/js/api.js`); FastAPI documents the API at `/docs`.
 
 ## Storage
 
-* One SQLite database per profile, encrypted with SQLCipher, WAL mode. Key in the Android Keystore, optionally wrapped by a passphrase.
-* Main tables: `accounts`, `transactions`, `splits`, `categories`, `category_assignments`, `rules`, `tags`, `balance_observations`, `source_files`, `source_records`, `import_runs`, `documents`, `blobs`, `op_log`, `settings`, plus `balance_daily` (derived, see Balances).
+* One SQLite database in the data directory (`CASHFLOW_DATA_DIR`, default `~/.local/share/cashflow`), never inside the repository. WAL mode.
+* Main tables: `accounts`, `transactions`, `splits`, `categories`, `category_assignments`, `rules`, `tags`, `balance_observations`, `source_files`, `source_records`, `import_runs`, `op_log`, `settings`, plus `balance_daily` (derived, see Balances).
 * `op_log` gives undo, an audit trail and later the sync feed.
-* Receipt images are encrypted files addressed by their hash.
+* No database encryption yet (see [DECISIONS.md](DECISIONS.md) #2).
 
 ## Identity and de-duplication
 
@@ -79,11 +86,11 @@ UPPER(collapsed counterparty name) │ UPPER(collapsed remittance info) │ end-
 
 * `occurrence` counts identical rows within one file, so two identical purchases on the same day stay two transactions.
 * `status` is not part of it, so a pending row keeps its identity when it becomes booked.
-* The reference implementation is `fingerprint_base` and `uuid8` in [`tools/connector_ref.py`](../tools/connector_ref.py); the Kotlin code must match it.
+* Implemented by `fingerprint_base` and `uuid8` in the connector engine; any later app must match it (the golden fixtures check this).
 
 ## Import pipeline
 
-1. Detect the format (header columns, file name) → ask the user if unsure, remember per account.
+1. The file is uploaded to `POST /api/imports`. Detect the format (header columns, file name) → ask the user if unsure, remember per account.
 2. Decode and parse with the connector → canonical records + raw row (provenance).
 3. Validate fields; compute fingerprints; skip known transactions; replace matching pending rows.
 4. Show a preview; on confirm, write everything in **one** database transaction.
@@ -93,7 +100,7 @@ UPPER(collapsed counterparty name) │ UPPER(collapsed remittance info) │ end-
 
 * **Declarative YAML definitions** for tabular exports: [`connectors/`](../connectors/). Data, not code: easy to review and safe to run.
 * Native parsers for open standards (camt.053, MT940) later.
-* Each definition has synthetic fixtures with a golden `expected.json`. The Python reference interpreter checks them in CI; the Kotlin engine must produce the same output.
+* Each definition has synthetic fixtures with a golden `expected.json`; the service's tests check that the engine reproduces them.
 
 ## Data model
 
@@ -145,31 +152,32 @@ Items of internal transfers are excluded from everything below.
 
 Style: dark theme, large numbers, a horizontal period strip (… Aug · Sep · **Oct**) for single periods and range tabs (1D · 1W · 1M · 1Y · Max) for line charts, similar to Trade Republic. Every chart has a table alternative; colours are stable, colour-blind-safe and never red/green only.
 
-1. **Net worth.** Line chart of Liquid net worth(t) for the selected range, with a draggable marker that shows date and value. Tapping a date opens a **donut chart** of Balance(A, t) per liquid account (negative balances such as a credit card are listed below the donut). Tapping a slice opens the account: its balance line and transactions.
+1. **Net worth.** Line chart of Liquid net worth(t) for the selected range, with a draggable marker that shows date and value. Clicking a date opens a **donut chart** of Balance(A, t) per liquid account (negative balances such as a credit card are listed below the donut). Clicking a slice opens the account: its balance line and transactions.
 2. **Movements over time.** For longer ranges: Money in and Money out per week, month or year (bars, or lines for ranges above two years), with the net result; transfers as a grey series that can be hidden.
 3. **Movement bubbles** for one period (day, week, month, year):
    * Level 1: *Income*, *Spending*, *Saving & investing* and a grey *Transfers* bubble; area ∝ amount (radius ∝ √amount).
-   * Tap → categories of that kind → subcategories → merchants → transactions (a breadcrumb leads back). Under 1 % share goes into "Other"; uncategorised items get their own bubble that links to the inbox.
+   * Click → categories of that kind → subcategories → merchants → transactions (a breadcrumb leads back). Under 1 % share goes into "Other"; uncategorised items get their own bubble that links to the inbox.
    * Below the bubbles: a list with colour dot, name, amount and share of the parent.
    * Bubbles keep their identity (category notation) when the period changes and animate to the new sizes.
 4. **Trends.** Line charts for net worth, income and spending over months and years, using the same range tabs as the net-worth chart.
 
 ## Machine learning
 
-* **On the device first.** Cloud services only as opt-in, per request, with the user's own key and a local log.
-* **Categorisation:** normalised merchant + remittance text + amount features → small multilingual embedding model + classifier (ONNX), learning from the user's corrections. Rules always win over the model.
-* **Receipts:** OCR → parse total, date, merchant and lines → check that the numbers add up → otherwise ask the user.
-* Models are downloaded on demand and verified by hash; their licences must allow redistribution.
+* **Local first.** Cloud services only as opt-in, per request, with the user's own key and a local log.
+* **Categorisation:** normalised merchant + remittance text + amount features → a scikit-learn classifier at first, a small multilingual embedding model later, learning from the user's corrections. Rules always win over the model.
+* Models are trained and stored in the data directory; downloaded models are verified by hash and their licences must allow redistribution.
 
 ## Privacy and security
 
-* Encrypted database and files; app lock with biometrics/PIN.
-* No telemetry, ads or trackers. Network only for opt-in features, each logged.
-* Untrusted input: size and time limits for imports; parsers are fuzz-tested.
-* Export everything; delete everything.
+* The service binds to `127.0.0.1` only; no accounts, no telemetry, no CDN: all frontend libraries are vendored.
+* Network only for opt-in features, each logged.
+* Untrusted input: upload size limit and parse time limits; parsers are tested with malformed files.
+* Export everything; delete everything (one data directory).
 * Never commit real financial data — fixtures are synthetic.
 
 ## Later
 
-* **Sync** phone ↔ laptop without a server: an encrypted backup file first, then LAN sync (Ktor + mDNS + pinned device keys) or iroh. Decided in P6.
+* **Phone app:** Kotlin Multiplatform + Compose, Android first, SQLCipher with the key in the Android Keystore ([DECISIONS.md](DECISIONS.md) #8, [learning/KOTLIN.md](learning/KOTLIN.md)). The service's domain logic and the connector fixtures are its specification.
+* **Receipts:** photo or PDF upload → OCR (e.g. PaddleOCR) → total, date, merchant and lines → match to the payment → split. Images stored encrypted, addressed by their hash.
+* **Sync** between devices without a server: an encrypted backup file first, then LAN sync.
 * **Knowledge Graph Manager backend:** optionally publish the ontology, shapes and data (as Turtle) to a self-hosted KGM (Apache Jena + Spring Boot) for server-side SPARQL and validation. One-way mirror; the local database stays the source of truth.

@@ -2,35 +2,35 @@
 
 Short records of the big choices. To change one, add a new entry that replaces it.
 
-## 1. Kotlin Multiplatform + Compose, Android first (2026-10-21)
+## 1. Python-first local service; phone app later (2026-11-08)
 
-**Context:** The first draft chose Rust + Tauri + Svelte. The developer knows Java and Python; Rust's learning curve would slow everything down. The phone (receipt capture, quick checks) matters more early on than the laptop.
-**Decision:** Kotlin Multiplatform with Compose Multiplatform. Android first, desktop (Compose Desktop) and iOS later from the same `shared` code. Build with JetBrains Amper; if Amper can't handle the database or camera setup in P0, switch to Gradle Kotlin DSL.
-**Consequences:** Familiar JVM ecosystem and tooling. iOS needs a Mac later. Bubble charts are drawn with Compose Canvas instead of D3.
+**Context:** Cashflow is first of all a personal utility. A phone app (decision 8) is a lot of work before it is clear the tool is worth it; the developer is fastest in Python.
+**Decision:** A local FastAPI service, managed with uv in package layout (`cashflow/src/cashflow`), that also serves a static frontend (plain JavaScript, vendored ECharts and d3-hierarchy, no build step). SQLite via SQLAlchemy. It binds to `127.0.0.1` only. The existing Python connector interpreter becomes the import engine.
+**Consequences:** Working views within weeks, in a familiar language. No phone use for now. Domain logic stays free of web code, so the rules, metric definitions, connector definitions and fixtures carry over to an app.
 
-## 2. Encrypted SQLite with an operation log (2026-10-19)
+## 2. SQLite with an operation log (2026-11-08, replaces the SQLCipher version of 2026-10-19)
 
-**Context:** All data lives on the user's devices; it must be durable, fast, encrypted and undoable.
-**Decision:** One SQLite database per profile, encrypted with SQLCipher. Every change is appended to `op_log` and applied to normal tables in the same transaction.
+**Context:** All data lives on the user's own computer; it must be durable, fast and undoable.
+**Decision:** One SQLite database in a data directory outside the repository (`~/.local/share/cashflow` by default). Every change is appended to `op_log` and applied to the normal tables in the same transaction. No database encryption for now: the data relies on disk encryption and the service listens on localhost only. SQLCipher comes with the phone app.
 **Consequences:** Simple queries and debugging; undo and audit for free; a ready-made feed for sync later. All writes must go through one storage API.
 
 ## 3. Ontology as vocabulary, relational at runtime (2026-10-19)
 
 **Context:** Many heterogeneous sources need one precise model; data should be portable.
 **Decision:** An OWL 2 ontology (with SKOS categories, SHACL shapes, PROV-O provenance) defines the terms. The app stores data relationally with the same terms and exports RDF. No triple store in the app.
-**Consequences:** Clear shared vocabulary and open exports; two representations to keep aligned (checked once RDF export exists, P5).
+**Consequences:** Clear shared vocabulary and open exports; two representations to keep aligned (checked once RDF export exists, P4).
 
 ## 4. Declarative connectors with golden fixtures (2026-10-19)
 
 **Context:** Bank export formats are many and change without notice.
-**Decision:** Tabular formats are described in YAML definitions interpreted by a connector engine. Each definition ships synthetic fixtures with a golden `expected.json`. A Python reference interpreter is the executable specification; the Kotlin engine must match it.
+**Decision:** Tabular formats are described in YAML definitions interpreted by a connector engine. Each definition ships synthetic fixtures with a golden `expected.json`. The Python engine in the service runs them; a later app engine must produce the same output.
 **Consequences:** New banks without code; formats are reviewable data. Exotic formats (PDF, ZIP) need code connectors later.
 
-## 5. On-device AI first, cloud only as opt-in (2026-10-19)
+## 5. Local AI first, cloud only as opt-in (2026-11-08)
 
-**Context:** Financial data is sensitive; phones can run small models.
-**Decision:** Categorisation and receipt reading run on the device (ONNX Runtime, ML Kit to start). Hosted models only per request, with the user's own key and a local log. Models are trained in a Python workbench.
-**Consequences:** Privacy by default; quality limited by small models at first. ML Kit is proprietary, so an F-Droid build later needs PaddleOCR via ONNX.
+**Context:** Financial data is sensitive; small models run fine locally.
+**Decision:** Categorisation (and receipt reading later) runs locally in Python: scikit-learn first, small ONNX or embedding models later. Hosted models only per request, with the user's own key and a local log.
+**Consequences:** Privacy by default; quality limited by small models at first.
 
 ## 6. Licensing (2026-10-19)
 
@@ -40,5 +40,11 @@ Short records of the big choices. To change one, add a new entry that replaces i
 ## 7. Sync deferred (2026-10-21)
 
 **Context:** Peer-to-peer sync is a large piece of work and only useful once a second device runs Cashflow.
-**Decision:** No sync until P6. The op-log and deterministic IDs keep the option open. First step then: an encrypted backup file; after that LAN sync or iroh.
-**Consequences:** Phase 1–5 are single-device.
+**Decision:** No sync until there is a phone app. The op-log and deterministic IDs keep the option open. First step then: an encrypted backup file; after that LAN sync or iroh.
+**Consequences:** Single device until then.
+
+## 8. Later: Kotlin Multiplatform app, Android first (2026-10-21, deferred 2026-11-08)
+
+**Context:** The first draft chose Rust + Tauri + Svelte; the developer knows Java and Python, so Kotlin is the easier path to a phone app.
+**Decision:** If the local service proves useful, the app is built with Kotlin Multiplatform and Compose Multiplatform: Android first, desktop and iOS later, with JetBrains Amper (Gradle Kotlin DSL as fallback) and SQLCipher. Notes: [learning/KOTLIN.md](learning/KOTLIN.md).
+**Consequences:** The service's domain logic is the specification for the app; the connector fixtures check both.
