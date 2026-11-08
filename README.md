@@ -14,7 +14,6 @@ Cashflow is a planned open-source, local-first personal finance tool. It reads t
 | [docs/DESIGN.md](docs/DESIGN.md) | Stack, architecture, storage, identity, metric definitions |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | The big choices and why |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phases P0–P4 and next actions |
-| [docs/learning/KOTLIN.md](docs/learning/KOTLIN.md) | Kotlin, Compose and Amper, for the later phone app |
 | [ontology/](ontology/) | Data model: OWL ontology, SKOS categories, SHACL shapes |
 | [connectors/](connectors/) | Bank export definitions (YAML) with synthetic test files |
 
@@ -37,8 +36,8 @@ uv run pytest
 ## Repository layout
 
 ```
-docs/         product, design, decisions, roadmap, learning notes
-ontology/     OWL ontology, SKOS categories, SHACL shapes, examples, SPARQL queries (CC BY 4.0)
+docs/         product, design, decisions, roadmap
+ontology/     OWL ontology, SKOS categories, SHACL shapes (CC BY 4.0)
 connectors/   connector definitions, JSON Schema, fixtures with golden outputs
 tools/        connector interpreter + golden tests (moves into cashflow/ in P0)
 cashflow/     (P0) FastAPI service + static frontend, uv package src/cashflow

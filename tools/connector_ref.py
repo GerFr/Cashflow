@@ -2,7 +2,7 @@
 
 This module is an *executable specification*: it defines precisely how a
 connector definition (connectors/definitions/*.yaml) turns an export file into
-canonical transaction records and RDF. CI runs it over every fixture.
+canonical transaction records. CI runs it over every fixture.
 
 It becomes the import engine of the Cashflow service in P0; any later engine
 must produce identical canonical JSON for every fixture in
@@ -21,11 +21,6 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
-
-from rdflib import BNode, Graph, Literal, Namespace, URIRef
-from rdflib.namespace import PROV, RDF, RDFS, XSD
-
-CF = Namespace("https://gerfr.github.io/Cashflow/ontology/cashflow#")
 
 ENCODINGS = {
     "utf-8": "utf-8",
@@ -383,104 +378,3 @@ class Interpreter:
 
 def run(definition: dict[str, Any], path: Path) -> ParseResult:
     return Interpreter(definition).run(path)
-
-
-# --- RDF ---------------------------------------------------------------------------
-
-
-def urn(name: str) -> URIRef:
-    return URIRef(f"urn:uuid:{uuid8(name)}")
-
-
-def money(g: Graph, value: str, currency: str) -> BNode:
-    node = BNode()
-    g.add((node, RDF.type, CF.MonetaryAmount))
-    g.add((node, CF.value, Literal(value, datatype=XSD.decimal)))
-    g.add((node, CF.currency, Literal(currency)))
-    return node
-
-
-def to_rdf(result: ParseResult, definition: dict[str, Any], file_name: str) -> Graph:
-    """Emit the parse result as RDF conforming to ontology/cashflow.ttl + shapes.ttl."""
-    g = Graph()
-    g.bind("cf", CF)
-    g.bind("prov", PROV)
-
-    connector = urn(f"connector:{result.connector_id}@{result.connector_version}")
-    g.add((connector, RDF.type, CF.Connector))
-    g.add((connector, RDFS.label, Literal(definition["name"])))
-    g.add((connector, CF.connectorId, Literal(result.connector_id)))
-    g.add((connector, CF.connectorVersion, Literal(result.connector_version)))
-
-    source = urn(f"file:{result.file_sha256}")
-    g.add((source, RDF.type, CF.SourceFile))
-    g.add((source, CF.sha256, Literal(result.file_sha256)))
-    g.add((source, CF.fileName, Literal(file_name)))
-    g.add((source, CF.mediaType, Literal("text/csv")))
-
-    run_node = urn(f"import:{result.file_sha256}:{result.connector_id}@{result.connector_version}")
-    g.add((run_node, RDF.type, CF.ImportRun))
-    g.add((run_node, PROV.used, source))
-    g.add((run_node, PROV.wasAssociatedWith, connector))
-
-    accounts: dict[str, URIRef] = {}
-    currencies: dict[str, str] = {}
-    for tx in result.transactions:
-        key = tx.get("account_iban") or tx.get("account_external_id")
-        currencies.setdefault(key, tx["currency"])
-    for key in result.accounts:
-        node = urn(f"account:{key}")
-        accounts[key] = node
-        g.add((node, RDF.type, CF[definition["account_kind"]]))
-        g.add((node, RDFS.label, Literal(f"{definition['institution']['name']} …{key[-4:]}")))
-        g.add((node, CF.currency, Literal(currencies.get(key, "EUR"))))
-        if re.fullmatch(r"[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}", key):
-            g.add((node, CF.iban, Literal(key)))
-        else:
-            g.add((node, CF.externalAccountId, Literal(key)))
-
-    for tx in result.transactions:
-        t = URIRef(f"urn:uuid:{tx['id']}")
-        g.add((t, RDF.type, CF.Transaction))
-        g.add((t, CF.account, accounts[tx.get("account_iban") or tx.get("account_external_id")]))
-        g.add((t, CF.bookingDate, Literal(tx["booking_date"], datatype=XSD.date)))
-        if "value_date" in tx:
-            g.add((t, CF.valueDate, Literal(tx["value_date"], datatype=XSD.date)))
-        if "transaction_datetime" in tx:
-            g.add((t, CF.transactionDateTime, Literal(tx["transaction_datetime"], datatype=XSD.dateTime)))
-        g.add((t, CF.amount, money(g, tx["amount"], tx["currency"])))
-        if "original_amount" in tx:
-            g.add((t, CF.originalAmount, money(g, tx["original_amount"], tx.get("original_currency", tx["currency"]))))
-        if "exchange_rate" in tx:
-            g.add((t, CF.exchangeRate, Literal(tx["exchange_rate"], datatype=XSD.decimal)))
-        if "fee_amount" in tx:
-            g.add((t, CF.fee, money(g, tx["fee_amount"], tx["currency"])))
-        g.add((t, CF.direction, CF.Debit if tx["direction"] == "debit" else CF.Credit))
-        g.add((t, CF.status, CF.Booked if tx["status"] == "booked" else CF.Pending))
-        for key, prop in [
-            ("counterparty_name", CF.counterpartyName),
-            ("counterparty_iban", CF.counterpartyIban),
-            ("counterparty_bic", CF.counterpartyBic),
-            ("remittance_information", CF.remittanceInformation),
-            ("booking_text", CF.bookingText),
-            ("creditor_id", CF.creditorId),
-            ("mandate_reference", CF.mandateReference),
-            ("end_to_end_id", CF.endToEndId),
-            ("merchant_category_code", CF.merchantCategoryCode),
-            ("external_id", CF.externalId),
-            ("related_external_id", CF.relatedExternalId),
-        ]:
-            if key in tx:
-                g.add((t, prop, Literal(tx[key])))
-        g.add((t, CF.fingerprint, Literal(tx["fingerprint"])))
-
-        record = urn(f"record:{result.file_sha256}:{tx['row_number']}")
-        g.add((record, RDF.type, CF.SourceRecord))
-        g.add((record, CF.sourceFile, source))
-        g.add((record, CF.rowNumber, Literal(tx["row_number"], datatype=XSD.positiveInteger)))
-        g.add((record, CF.rawContent, Literal(result.raw_rows[tx["row_number"]])))
-        g.add((t, PROV.wasDerivedFrom, record))
-        g.add((t, PROV.wasGeneratedBy, run_node))
-
-    # Balances stay in the JSON output only; the core ontology has no balance class yet.
-    return g

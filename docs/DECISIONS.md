@@ -34,7 +34,7 @@ Short records of the big choices. To change one, add a new entry that replaces i
 
 ## 6. Licensing (2026-10-19)
 
-**Decision:** Code AGPL-3.0-or-later; ontology, categories and examples CC BY 4.0.
+**Decision:** Code AGPL-3.0-or-later; ontology and categories CC BY 4.0.
 **Consequences:** Improvements to the app stay open; the vocabulary can be reused freely with attribution. Dependencies and models must be AGPL-compatible.
 
 ## 7. Sync deferred (2026-10-21)
@@ -46,5 +46,5 @@ Short records of the big choices. To change one, add a new entry that replaces i
 ## 8. Later: Kotlin Multiplatform app, Android first (2026-10-21, deferred 2026-11-08)
 
 **Context:** The first draft chose Rust + Tauri + Svelte; the developer knows Java and Python, so Kotlin is the easier path to a phone app.
-**Decision:** If the local service proves useful, the app is built with Kotlin Multiplatform and Compose Multiplatform: Android first, desktop and iOS later, with JetBrains Amper (Gradle Kotlin DSL as fallback) and SQLCipher. Notes: [learning/KOTLIN.md](learning/KOTLIN.md).
+**Decision:** If the local service proves useful, the app is built with Kotlin Multiplatform and Compose Multiplatform: Android first, desktop and iOS later, with JetBrains Amper (Gradle Kotlin DSL as fallback) and SQLCipher.
 **Consequences:** The service's domain logic is the specification for the app; the connector fixtures check both.

@@ -12,17 +12,6 @@
 *.db-wal
 *.db-shm
 
-# --- Kotlin / Android (later app: Amper, Gradle) ---------------------------------
-build/
-.amper/
-.gradle/
-.kotlin/
-local.properties
-*.apk
-*.aab
-*.keystore
-*.jks
-
 # --- Python ---------------------------------------------------------------------
 __pycache__/
 *.py[cod]
@@ -41,8 +30,6 @@ htmlcov/
 *.onnx
 *.gguf
 *.safetensors
-/ml/models/
-/ml/runs/
 
 # --- OS / editors ------------------------------------------------------------------
 .DS_Store

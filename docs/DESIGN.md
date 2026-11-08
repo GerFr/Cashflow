@@ -139,7 +139,7 @@ Items of internal transfers are excluded from everything below.
 
 **Check:** for a period in which every liquid account is fully imported, Liquid net worth(end) − Liquid net worth(start) = Money in − Money out. A difference points to a missing import or a wrong balance and is shown as a warning.
 
-**Week** = ISO 8601 week (Monday–Sunday); **month** = calendar month. The SPARQL queries in [`ontology/queries/`](../ontology/queries/) implement Spend for the example data.
+**Week** = ISO 8601 week (Monday–Sunday); **month** = calendar month.
 
 ## Balances
 
@@ -177,7 +177,7 @@ Style: dark theme, large numbers, a horizontal period strip (… Aug · Sep · *
 
 ## Later
 
-* **Phone app:** Kotlin Multiplatform + Compose, Android first, SQLCipher with the key in the Android Keystore ([DECISIONS.md](DECISIONS.md) #8, [learning/KOTLIN.md](learning/KOTLIN.md)). The service's domain logic and the connector fixtures are its specification.
+* **Phone app:** Kotlin Multiplatform + Compose, Android first, SQLCipher with the key in the Android Keystore ([DECISIONS.md](DECISIONS.md) #8). The service's domain logic and the connector fixtures are its specification.
 * **Receipts:** photo or PDF upload → OCR (e.g. PaddleOCR) → total, date, merchant and lines → match to the payment → split. Images stored encrypted, addressed by their hash.
 * **Sync** between devices without a server: an encrypted backup file first, then LAN sync.
 * **Knowledge Graph Manager backend:** optionally publish the ontology, shapes and data (as Turtle) to a self-hosted KGM (Apache Jena + Spring Boot) for server-side SPARQL and validation. One-way mirror; the local database stays the source of truth.
