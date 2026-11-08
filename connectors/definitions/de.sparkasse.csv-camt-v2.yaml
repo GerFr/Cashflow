@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=../schema/connector.schema.json
+dsl_version: "0.1"
+id: de.sparkasse.csv-camt-v2
+name: Sparkasse – Umsätze als CSV-CAMT V2
+version: 0.1.0
+status: draft            # column layout written from public documentation; verify against a real export
+verified_against: null
+maintainers: []
+notes: >
+  Online-banking export "CSV-CAMT V2" offered by most Sparkassen. One header row,
+  semicolon-separated, every cell quoted, ISO-8859-1/Windows-1252 encoded,
+  two-digit years. The "Info" column distinguishes booked and pending rows.
+
+institution:
+  name: Sparkasse (Sparkassen-Finanzgruppe)
+  country: DE
+account_kind: CheckingAccount
+
+input:
+  type: csv
+  encoding: windows-1252
+  delimiter: ";"
+  quote: '"'
+  header:
+    row: 1
+
+locale:
+  decimal_separator: ","
+  thousands_separator: "."
+  date_formats: ["%d.%m.%y", "%d.%m.%Y"]
+
+detect:
+  required_columns:
+    - Auftragskonto
+    - Buchungstag
+    - Valutadatum
+    - Buchungstext
+    - Verwendungszweck
+    - Beguenstigter/Zahlungspflichtiger
+    - Betrag
+    - Waehrung
+    - Info
+
+fields:
+  account_iban:
+    column: Auftragskonto
+    transform: [remove_spaces, upper]
+  booking_date:
+    column: Buchungstag
+    type: date
+  value_date:
+    column: Valutadatum
+    type: date
+  amount:
+    column: Betrag
+    type: decimal
+  currency:
+    column: Waehrung
+    transform: [trim, upper]
+  status:
+    column: Info
+    map:
+      "Umsatz gebucht": booked
+      "Umsatz vorgemerkt": pending
+  counterparty_name:
+    column: Beguenstigter/Zahlungspflichtiger
+    transform: [collapse_whitespace]
+  counterparty_iban:
+    column: Kontonummer/IBAN
+    transform: [remove_spaces, upper]
+  counterparty_bic:
+    column: BIC (SWIFT-Code)
+    transform: [trim, upper]
+  remittance_information:
+    column: Verwendungszweck
+    transform: [collapse_whitespace]
+  booking_text:
+    column: Buchungstext
+    transform: [trim]
+  creditor_id:
+    column: Glaeubiger ID
+    transform: [trim]
+  mandate_reference:
+    column: Mandatsreferenz
+    transform: [trim]
+  end_to_end_id:
+    column: Kundenreferenz (End-to-End)
+    transform: [trim]
+    null_values: ["NOTPROVIDED"]
+
+direction:
+  mode: signed_amount

@@ -1,0 +1,4 @@
+# Connector conformance tooling (CI + local).
+# Install: uv pip install -r tools/requirements.txt   (or: pip install -r ...)
+PyYAML==6.0.3
+jsonschema==4.26.0
