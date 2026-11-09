@@ -49,7 +49,7 @@ API docs: `http://127.0.0.1:8000/docs`
 
 Plain HTML, CSS and JavaScript in `src/cashflow/resources/ui/`, served by FastAPI under `/app/`; no build step and no CDN. All `fetch` calls are in `assets/js/api.js`. The tabs Net worth, Movements, Bubbles, Trends and Inbox are placeholders until P2.
 
-* **Import:** drop a bank export → *Check file* shows what would happen (new, already imported, pending → booked, outdated pending removed) → *Import* writes it.
+* **Import:** drop a bank export → *Check file* compares every transaction with the ones already imported (whatever file they came from) and shows what would happen: new, already imported, pending → booked, outdated pending removed → *Import* writes it.
 * **Accounts:** latest known balance per account, the liquid flag and an opening balance for accounts whose exports carry no balance; a warning when a balance from an export disagrees with the computed one (usually a missing export). The total sums the liquid accounts.
 
 ## API
@@ -59,7 +59,7 @@ Plain HTML, CSS and JavaScript in `src/cashflow/resources/ui/`, served by FastAP
 | GET | `/api/health` | `{status, version, connectors}` |
 | GET | `/api/connectors` | `[{id, name, version, status, institution}]` |
 | POST | `/api/parse` | raw file bytes (CSV, or a Trade Republic PDF statement) + URL-encoded `X-Filename` header; optional `?connector=<id>` → canonical parse result (same shape as the fixtures' `expected.json`); nothing is stored. `400` bad filename, `404` unknown connector, `413` larger than 20 MB, `422` not recognised or malformed |
-| POST | `/api/imports` | same upload as `/api/parse` → `201` preview `{id, counts, new_accounts, already_imported, transactions[+state]}`; nothing is written |
+| POST | `/api/imports` | same upload as `/api/parse` → `201` preview `{id, counts, new_accounts, transactions[+state]}`, each transaction compared with the database by its id; nothing is written |
 | POST | `/api/imports/{id}/commit` | writes the preview in one transaction → import run; `404` if already committed or expired |
 | GET | `/api/imports` | import history, newest first |
 | GET | `/api/accounts` | accounts with latest balance, opening balance and balance mismatches |

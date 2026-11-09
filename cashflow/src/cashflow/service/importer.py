@@ -1,6 +1,8 @@
 """Import pipeline: parse → classify against the database → preview → commit (DESIGN.md#import-pipeline).
 
-Each parsed record is classified by its deterministic id:
+Duplicates are found per transaction, never per file: each parsed record is classified by its
+deterministic id (fingerprint of account, dates, amount, counterparty, purpose and reference ids), so a
+new download that overlaps earlier ones only adds the rows that are missing:
 
 * ``new``: not in the database yet;
 * ``duplicate``: already imported (re-importing overlapping exports adds nothing);
@@ -89,7 +91,6 @@ class Preview:
     file_name: str
     size: int
     plan: Plan
-    already_imported: bool
     id: str = field(default_factory=uuid7)
     created_at: datetime = field(default_factory=utcnow)
 
@@ -123,8 +124,7 @@ def classify(session: Session, result: ParseResult) -> Plan:
 
 
 def preview(session: Session, connector: Connector, result: ParseResult, file_name: str, size: int) -> Preview:
-    already = session.get(SourceFile, result.file_sha256) is not None
-    return Preview(connector, result, file_name, size, classify(session, result), already)
+    return Preview(connector, result, file_name, size, classify(session, result))
 
 
 def columns(record: dict[str, Any]) -> dict[str, Any]:

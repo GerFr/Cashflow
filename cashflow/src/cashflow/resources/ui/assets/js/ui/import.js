@@ -2,7 +2,8 @@
  * Cashflow UI - import view
  * -------------------------
  * Drop or choose a bank export → "Check file" sends it to POST /api/imports and
- * shows what the import would do (new, already imported, pending replaced) →
+ * shows, transaction by transaction, what the import would do (new, already
+ * imported, pending replaced; never judged by the file as a whole) →
  * "Import" commits the preview. Values from the file are written with
  * textContent only (never innerHTML).
  */
@@ -71,9 +72,8 @@ const CashflowImport = (function () {
     if (counts.replaces_pending) chip(list, `${counts.replaces_pending} pending → booked`, "accent");
     if (counts.removes_pending) chip(list, `${counts.removes_pending} outdated pending removed`, "warning");
 
-    const notes = [];
+    const notes = ["Each transaction is compared with the ones already imported, whatever file they came from."];
     if (result.new_accounts.length) notes.push(`New account: ${result.new_accounts.join(", ")}.`);
-    if (result.already_imported) notes.push("This exact file was imported before.");
     const notice = element("result-notice");
     notice.textContent = notes.join(" ");
     notice.hidden = !notes.length;

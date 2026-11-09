@@ -41,9 +41,10 @@ class ImportPreviewOut(BaseModel):
     id: str
     file_name: str
     connector: ConnectorInfo
-    already_imported: bool = Field(description="The same file (by SHA-256) was imported before.")
     new_accounts: list[str]
-    counts: dict[str, int] = Field(description="new, duplicate, replaces_pending, removes_pending")
+    counts: dict[str, int] = Field(
+        description="Per transaction, compared with the database: new, duplicate, replaces_pending, removes_pending"
+    )
     balances: list[dict[str, str]]
     transactions: list[dict[str, Any]] = Field(description="Canonical records, each with its import 'state'.")
 
@@ -53,7 +54,6 @@ class ImportPreviewOut(BaseModel):
             id=item.id,
             file_name=item.file_name,
             connector=ConnectorInfo.from_connector(item.connector),
-            already_imported=item.already_imported,
             new_accounts=item.plan.new_accounts,
             counts=item.plan.counts,
             balances=item.result.balances,

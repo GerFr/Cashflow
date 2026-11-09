@@ -18,7 +18,6 @@ def test_preview_writes_nothing(client, data_dir):
     result = preview(client, fixture_bytes(DKB))
     assert result["counts"] == {"new": 5, "duplicate": 0, "replaces_pending": 0, "removes_pending": 0}
     assert result["new_accounts"] == [DKB_IBAN]
-    assert result["already_imported"] is False
     assert {tx["state"] for tx in result["transactions"]} == {"new"}
     assert client.get("/api/accounts").json() == []
     assert op_counts(data_dir) == {}
@@ -44,7 +43,7 @@ def test_import_creates_account_transactions_and_log(client, data_dir):
 def test_reimport_adds_nothing(client):
     import_file(client, fixture_bytes(DKB))
     again = preview(client, fixture_bytes(DKB))
-    assert again["already_imported"] is True
+    assert "already_imported" not in again
     assert again["counts"] == {"new": 0, "duplicate": 5, "replaces_pending": 0, "removes_pending": 0}
     run = client.post(f"/api/imports/{again['id']}/commit").json()
     assert run["new"] == 0
@@ -73,6 +72,17 @@ def test_outdated_pending_row_is_removed(client, data_dir):
     import_file(client, changed, "later.csv")
     assert op_counts(data_dir)["transaction.delete"] == 1
     assert account(client, DKB_IBAN)["transactions"] == 5
+
+
+def test_duplicates_are_found_per_transaction_not_per_file(client):
+    import_file(client, fixture_bytes(DKB))
+    # a later download: other balance date in the header and one more booking → another file hash
+    later = fixture_bytes(DKB).replace(b"Kontostand vom 08.10.2026", b"Kontostand vom 09.10.2026") + (
+        b'"09.10.26";"09.10.26";"Gebucht";"Max Mustermann";"Kiosk";"Zeitung";"Ausgang";"";"-2,50";"";"";""\n'
+    )
+    result = preview(client, later, "later.csv")
+    assert result["counts"] == {"new": 1, "duplicate": 5, "replaces_pending": 0, "removes_pending": 0}
+    assert [tx["counterparty_name"] for tx in result["transactions"] if tx["state"] == "new"] == ["Kiosk"]
 
 
 def test_preview_can_be_committed_once(client):
