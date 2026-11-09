@@ -5,3 +5,4 @@
 - `GET /api/health`, `GET /api/connectors`, `POST /api/parse`.
 - Static UI under `/app/` with an import tab that parses a bank export.
 - Connector conformance suite and API/UI tests in pytest.
+- New connector `de.dkb.visa-csv-2023` (DKB Visa credit card); `de.dkb.csv-2023` checked against a real export.

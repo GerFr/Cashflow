@@ -3,8 +3,8 @@ dsl_version: "0.1"
 id: de.dkb.csv-2023
 name: DKB Girokonto – CSV export (layout since 2023)
 version: 0.1.0
-status: draft            # layout written from memory of the post-2023 web banking export; verify against a real export
-verified_against: null
+status: community        # checked against a real export by the maintainer
+verified_against: "2026-11-09"
 maintainers: []
 notes: >
   The export starts with a preamble (account, balance) before the header row.

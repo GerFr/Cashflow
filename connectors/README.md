@@ -12,7 +12,8 @@ connectors/
 | Id | Provider / format | Status |
 |---|---|---|
 | [`de.sparkasse.csv-camt-v2`](definitions/de.sparkasse.csv-camt-v2.yaml) | Sparkasse "CSV-CAMT V2" | `draft` |
-| [`de.dkb.csv-2023`](definitions/de.dkb.csv-2023.yaml) | DKB, CSV layout since 2023 | `draft` |
+| [`de.dkb.csv-2023`](definitions/de.dkb.csv-2023.yaml) | DKB Girokonto, CSV layout since 2023 | `community` |
+| [`de.dkb.visa-csv-2023`](definitions/de.dkb.visa-csv-2023.yaml) | DKB Visa Kreditkarte, CSV layout since 2023 | `draft` |
 
 Status: `draft` = written from documentation, never checked against a real export · `community` = checked against a real export · `verified` = also has fixtures from an anonymised real export.
 

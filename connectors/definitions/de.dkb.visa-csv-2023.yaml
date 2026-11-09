@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=../schema/connector.schema.json
+dsl_version: "0.1"
+id: de.dkb.visa-csv-2023
+name: DKB Visa Kreditkarte – CSV export (layout since 2023)
+version: 0.1.0
+status: draft            # header and preamble taken from a real export (2026-11); foreign-currency cell format still a guess
+verified_against: null
+maintainers: []
+notes: >
+  Credit card export of the DKB web banking. A preamble names the card (masked
+  number, no IBAN) and its balance ("Saldo vom …", amount followed by "EUR"),
+  then the header row. Amounts are signed and may have fewer than two decimals
+  ("-20", "-6,59", "-878,7"). Belegdatum is the purchase date and is used as the
+  booking date; Wertstellung may be empty for pending rows. The masked card
+  number without spaces is the account id. Fremdwährungsbetrag is assumed to
+  look like "-12,50 USD".
+
+institution:
+  name: Deutsche Kreditbank AG
+  country: DE
+  bic: BYLADEM1001
+  website: https://www.dkb.de
+account_kind: CreditCardAccount
+
+input:
+  type: csv
+  encoding: utf-8-sig
+  delimiter: ";"
+  quote: '"'
+  header:
+    find_row_containing: ["Belegdatum", "Beschreibung", "Betrag (€)"]
+  preamble:
+    card_number:
+      row_matches: "^Karte"
+      cell: 2
+      transform: [remove_spaces]
+    closing_balance:
+      row_matches: "^Saldo vom"
+      cell: 1
+      regex: "([-+]?[0-9.]*[0-9](?:,[0-9]+)?)"
+      type: decimal
+    closing_balance_date:
+      row_matches: "^Saldo vom"
+      cell: 0
+      regex: "([0-9]{2}\\.[0-9]{2}\\.[0-9]{4})"
+      type: date
+
+locale:
+  decimal_separator: ","
+  thousands_separator: "."
+  date_formats: ["%d.%m.%y", "%d.%m.%Y"]
+
+detect:
+  required_columns:
+    - Belegdatum
+    - Wertstellung
+    - Status
+    - Beschreibung
+    - Umsatztyp
+    - Betrag (€)
+
+fields:
+  account_external_id:
+    from_preamble: card_number
+  booking_date:
+    column: Belegdatum
+    type: date
+  value_date:
+    column: Wertstellung
+    type: date
+  amount:
+    column: Betrag (€)
+    type: decimal
+  currency:
+    const: EUR
+  original_amount:
+    column: Fremdwährungsbetrag
+    regex: "([-+]?[0-9.]*[0-9](?:,[0-9]+)?)"
+    type: decimal
+  original_currency:
+    column: Fremdwährungsbetrag
+    regex: "([A-Z]{3})"
+  status:
+    column: Status
+    map:
+      Gebucht: booked
+      Vorgemerkt: pending
+  counterparty_name:
+    column: Beschreibung
+    transform: [collapse_whitespace]
+  booking_text:
+    column: Umsatztyp
+
+direction:
+  mode: signed_amount

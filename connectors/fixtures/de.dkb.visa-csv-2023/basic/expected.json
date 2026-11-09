@@ -1,0 +1,119 @@
+{
+  "connector": {
+    "id": "de.dkb.visa-csv-2023",
+    "version": "0.1.0"
+  },
+  "file_sha256": "cbb0cca0028c4fc229dc848a68824de49c3b273e8794ee84111cc1dd12339866",
+  "accounts": [
+    "4111••••••••1111"
+  ],
+  "balances": [
+    {
+      "account": "4111••••••••1111",
+      "date": "2026-11-09",
+      "balance": "-412.30"
+    }
+  ],
+  "skipped_rows": [],
+  "transactions": [
+    {
+      "id": "8a31e638-e958-8b78-a5e8-3bdc6a91a146",
+      "fingerprint": "12648685ef35ea534c59db34069137daf509f1d9ecdb4bce9dcc341add3bdf86",
+      "row_number": 6,
+      "account_external_id": "4111••••••••1111",
+      "booking_date": "2026-11-08",
+      "direction": "debit",
+      "amount": "49.90",
+      "currency": "EUR",
+      "status": "pending",
+      "counterparty_name": "Musterbahn Online Ticket",
+      "booking_text": "Online"
+    },
+    {
+      "id": "dca01f12-f3b9-8f89-9711-8bb8d5340be0",
+      "fingerprint": "85047d05b8798070ea84bd6e6d1327f39487dc93fb799b3a3465f953fa255ab4",
+      "row_number": 7,
+      "account_external_id": "4111••••••••1111",
+      "booking_date": "2026-11-07",
+      "value_date": "2026-11-08",
+      "direction": "debit",
+      "amount": "3.20",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Kornblume Backstube",
+      "booking_text": "Im Geschäft"
+    },
+    {
+      "id": "4509e6a1-d674-8fae-8b6c-f3e92794a9b3",
+      "fingerprint": "d621521347d0a85d823c1428f69f8f4048b91324411d7694db55183be7ac2bc6",
+      "row_number": 8,
+      "account_external_id": "4111••••••••1111",
+      "booking_date": "2026-11-07",
+      "value_date": "2026-11-08",
+      "direction": "debit",
+      "amount": "3.20",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Kornblume Backstube",
+      "booking_text": "Im Geschäft"
+    },
+    {
+      "id": "45b807c0-5bdf-8545-bfeb-faf23c5da591",
+      "fingerprint": "6f7cd788495903717fab78287201719d09448727654dadb29358a8cda74e9e2e",
+      "row_number": 9,
+      "account_external_id": "4111••••••••1111",
+      "booking_date": "2026-11-05",
+      "value_date": "2026-11-06",
+      "direction": "debit",
+      "amount": "11.73",
+      "currency": "EUR",
+      "original_amount": "12.50",
+      "original_currency": "USD",
+      "status": "booked",
+      "counterparty_name": "MUSTER CAFE NEW YORK",
+      "booking_text": "Im Geschäft"
+    },
+    {
+      "id": "477208ff-56b5-82ca-8afd-cb6d70b5ebb5",
+      "fingerprint": "2c29335ff22c46a99c859f5ca5d5813697ee175789e495b76e827034ddb19a02",
+      "row_number": 10,
+      "account_external_id": "4111••••••••1111",
+      "booking_date": "2026-11-03",
+      "value_date": "2026-11-04",
+      "direction": "credit",
+      "amount": "25.00",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Rückerstattung Muster Versand",
+      "booking_text": "Gutschrift"
+    },
+    {
+      "id": "3e51a9ff-af2b-89dc-81da-62c8c1ab273d",
+      "fingerprint": "cd7260091d80b7419a7013381e5f51d01160fcd999025c6953d1031d65deff2c",
+      "row_number": 11,
+      "account_external_id": "4111••••••••1111",
+      "booking_date": "2026-11-01",
+      "value_date": "2026-11-01",
+      "direction": "credit",
+      "amount": "500.00",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Ausgleich Kreditkarte",
+      "booking_text": "Ausgleich"
+    },
+    {
+      "id": "3f559cc0-4f4d-8596-a074-6d1263f508c5",
+      "fingerprint": "6aeae1027bc0970638836d23f19f8843f1e49aff40bd37bb23c6eb928785e4fc",
+      "row_number": 12,
+      "account_external_id": "4111••••••••1111",
+      "booking_date": "2026-10-28",
+      "value_date": "2026-10-29",
+      "direction": "debit",
+      "amount": "1234.56",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Musterreisen GmbH",
+      "booking_text": "Online"
+    }
+  ]
+}
