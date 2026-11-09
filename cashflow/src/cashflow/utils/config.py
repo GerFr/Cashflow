@@ -23,9 +23,15 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = Field(default=8000, ge=1, le=65535)
     connectors_dir: Path = REPO_DIR / "connectors"
+    data_dir: Path = Path.home() / ".local" / "share" / "cashflow"
 
     # Fixed defaults
     max_upload_mb: ClassVar[int] = 20
+    max_previews: ClassVar[int] = 20  # import previews kept in memory until committed
+
+    @property
+    def database_path(self) -> Path:
+        return self.data_dir / "cashflow.db"
 
 
 @lru_cache

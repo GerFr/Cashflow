@@ -9,6 +9,7 @@
   --credit: #4cc38a;
   --debit: #f2f4f7;
   --error: #ff6b6b;
+  --warning: #f0b955;
   --radius: 12px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: dark;
@@ -241,4 +242,98 @@ td.credit {
 tr.pending td {
   color: var(--muted);
   font-style: italic;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.8rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+.chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.85rem;
+}
+
+.chip-accent {
+  border-color: var(--accent);
+}
+
+.chip-warning,
+.message-warning {
+  color: var(--warning);
+}
+
+.chip-warning {
+  border-color: var(--warning);
+}
+
+.message-success {
+  color: var(--credit);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+tr.duplicate td {
+  color: var(--muted);
+}
+
+tr.excluded td {
+  opacity: 0.55;
+}
+
+.total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+
+.total-value {
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.inline-form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.inline-form input {
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.button-small {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
 }

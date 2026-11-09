@@ -29,6 +29,7 @@ class Connector(Protocol):
     version: str
     status: str
     institution: str
+    account_kind: str  # ontology class of the accounts in its files, e.g. CheckingAccount
     filename_patterns: tuple[str, ...]
 
     def matches(self, data: bytes) -> bool: ...
@@ -59,6 +60,10 @@ class DeclarativeConnector:
     @property
     def institution(self) -> str:
         return self.definition["institution"]["name"]
+
+    @property
+    def account_kind(self) -> str:
+        return self.definition["account_kind"]
 
     @property
     def filename_patterns(self) -> tuple[str, ...]:

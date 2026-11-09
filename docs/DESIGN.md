@@ -64,8 +64,9 @@ Endpoints stay thin: domain modules (connectors, importer, balances, metrics) do
 ## Storage
 
 * One SQLite database in the data directory (`CASHFLOW_DATA_DIR`, default `~/.local/share/cashflow`), never inside the repository. WAL mode.
-* Main tables: `accounts`, `transactions`, `splits`, `categories`, `category_assignments`, `rules`, `tags`, `balance_observations`, `source_files`, `source_records`, `import_runs`, `op_log`, `settings`, plus `balance_daily` (derived, see Balances).
-* `op_log` gives undo, an audit trail and later the sync feed.
+* Tables today (P1): `accounts`, `transactions`, `balance_observations`, `source_files`, `source_records`, `import_runs`, `op_log`, plus `balance_daily` (derived, see Balances). Added with their features: `splits`, `categories`, `category_assignments`, `rules`, `tags`, `settings`.
+* `op_log` gives undo, an audit trail and later the sync feed. Derived tables (`balance_daily`) are not logged; they are recomputed from the logged ones.
+* The schema version is stored in `PRAGMA user_version`; a database with another version is refused until migrations exist.
 * No database encryption yet (see [DECISIONS.md](DECISIONS.md) #2).
 
 ## Identity and de-duplication
@@ -145,7 +146,8 @@ Items of internal transfers are excluded from everything below.
 
 * **Anchors:** balances from export files (preamble or CAMT closing balances, already read by the connectors as `balances`) are stored in `balance_observations`. Where an export has none, the user enters an opening balance for the account.
 * **Computation:** Balance(A, t) = nearest anchor + Σ signed amounts of booked transactions between the anchor and *t*. Anchors before and after *t* must agree; if they don't, the gap is flagged (usually a missing import).
-* **Speed:** `balance_daily(account, day, balance)` is derived from the transactions and anchors and updated incrementally after each import or edit, so the net-worth chart and donut need no recomputation.
+* **Speed:** `balance_daily(account, day, balance)` is derived from the transactions and anchors and rewritten for the affected accounts after each import or edit, so the net-worth chart and donut need no recomputation.
+* **Several anchors:** the balance is carried backwards and forwards from the earliest anchor; each later anchor is compared with the computed value (a difference is reported per account) and then taken as the new starting point. On the same day an export balance wins over an opening balance.
 * Pending transactions are not part of balances; they are shown separately.
 
 ## Views

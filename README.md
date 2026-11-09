@@ -4,7 +4,7 @@
 
 Cashflow is a planned open-source, local-first personal finance tool. It reads the exports of your banks, cards and payment services, puts them into one consistent data model, and shows your **liquid net worth** over time and where your money moves as **bubbles per day, week and month**. It runs as a small local service on your computer with a browser page; nothing goes to a cloud server.
 
-> **Status: phase P0 done → P1.** A Python FastAPI service (managed with uv) that also serves the frontend; a phone app may follow later. Today it parses bank exports and shows them; storage and charts follow in P1 and P2.
+> **Status: phase P1 done → P2.** A Python FastAPI service (managed with uv) that also serves the frontend; a phone app may follow later. Today it imports bank exports into a local database and shows accounts with their balances; the charts follow in P2.
 
 ## Documents
 

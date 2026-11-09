@@ -2,7 +2,7 @@
 
 Local FastAPI service that reads bank exports with the declarative connectors in [`../connectors/`](../connectors/) and serves the Cashflow web page. It listens on `127.0.0.1` only; nothing leaves the computer.
 
-> **Phase P0:** files are parsed and shown, nothing is stored yet. The database arrives in P1, the charts in P2 ([ROADMAP](../docs/ROADMAP.md)).
+> **Phase P1:** imports are stored in a local SQLite database with balances per account and day. The charts arrive in P2 ([ROADMAP](../docs/ROADMAP.md)).
 
 ## Requirements
 
@@ -28,6 +28,9 @@ Only deployment values come from the environment (or `.env`). Everything else is
 | `CASHFLOW_HOST` | `127.0.0.1` |
 | `CASHFLOW_PORT` | `8000` |
 | `CASHFLOW_CONNECTORS_DIR` | `../connectors` (repository root) |
+| `CASHFLOW_DATA_DIR` | `~/.local/share/cashflow` (database `cashflow.db`) |
+
+The database is created on first start. Until there are migrations, a database from an older schema version is refused with a message; move the file away and import your exports again.
 
 ## Run
 
@@ -44,7 +47,10 @@ API docs: `http://127.0.0.1:8000/docs`
 
 ## UI
 
-Plain HTML, CSS and JavaScript in `src/cashflow/resources/ui/`, served by FastAPI under `/app/`; no build step and no CDN. All `fetch` calls are in `assets/js/api.js`. The tabs Net worth, Movements, Bubbles, Trends and Inbox are placeholders until P2. **Import** parses a dropped or chosen bank export and shows the recognised format, accounts, closing balances and transactions.
+Plain HTML, CSS and JavaScript in `src/cashflow/resources/ui/`, served by FastAPI under `/app/`; no build step and no CDN. All `fetch` calls are in `assets/js/api.js`. The tabs Net worth, Movements, Bubbles, Trends and Inbox are placeholders until P2.
+
+* **Import:** drop a bank export → *Check file* shows what would happen (new, already imported, pending → booked, outdated pending removed) → *Import* writes it.
+* **Accounts:** latest known balance per account, the liquid flag and an opening balance for accounts whose exports carry no balance; a warning when a balance from an export disagrees with the computed one (usually a missing export). The total sums the liquid accounts.
 
 ## API
 
@@ -52,12 +58,19 @@ Plain HTML, CSS and JavaScript in `src/cashflow/resources/ui/`, served by FastAP
 |---|---|---|
 | GET | `/api/health` | `{status, version, connectors}` |
 | GET | `/api/connectors` | `[{id, name, version, status, institution}]` |
-| POST | `/api/parse` | raw file bytes (CSV, or a Trade Republic PDF statement) + URL-encoded `X-Filename` header; optional `?connector=<id>` → canonical parse result (same shape as the fixtures' `expected.json`). `400` bad filename, `404` unknown connector, `413` larger than 20 MB, `422` not recognised or malformed |
+| POST | `/api/parse` | raw file bytes (CSV, or a Trade Republic PDF statement) + URL-encoded `X-Filename` header; optional `?connector=<id>` → canonical parse result (same shape as the fixtures' `expected.json`); nothing is stored. `400` bad filename, `404` unknown connector, `413` larger than 20 MB, `422` not recognised or malformed |
+| POST | `/api/imports` | same upload as `/api/parse` → `201` preview `{id, counts, new_accounts, already_imported, transactions[+state]}`; nothing is written |
+| POST | `/api/imports/{id}/commit` | writes the preview in one transaction → import run; `404` if already committed or expired |
+| GET | `/api/imports` | import history, newest first |
+| GET | `/api/accounts` | accounts with latest balance, opening balance and balance mismatches |
+| PATCH | `/api/accounts/{id}` | `{name?, liquid?, opening_balance?: {amount, date?} \| null}` |
+| GET | `/api/accounts/{id}/balances?from&to` | end-of-day balances `[{date, balance}]` |
 
 `curl` example:
 
 ```bash
-curl -H 'X-Filename: export.csv' --data-binary @export.csv http://127.0.0.1:8000/api/parse
+curl -H 'X-Filename: export.csv' --data-binary @export.csv http://127.0.0.1:8000/api/imports   # preview
+curl -X POST http://127.0.0.1:8000/api/imports/<id>/commit                                          # import
 ```
 
 ## Tests
@@ -68,7 +81,7 @@ uv run ruff check && uv run ruff format --check
 ```
 
 * `test/unit/test_connectors.py` is the connector conformance suite: every definition must be valid against the JSON Schema and reproduce each fixture's `expected.json`.
-* `test/e2e/` drives the API and the static UI through FastAPI's `TestClient`.
+* `test/e2e/` drives the API and the static UI through FastAPI's `TestClient`; every test gets its own empty database.
 * `test/support/traderepublic.py` builds synthetic Trade Republic statements; `uv run python test/support/traderepublic.py` rewrites the PDF fixture.
 
 After changing a connector definition, regenerate its golden files and review every changed value:

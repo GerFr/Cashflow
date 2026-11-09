@@ -121,6 +121,7 @@ class TradeRepublicStatement:
     version = "0.1.0"
     status = "community"
     institution = "Trade Republic Bank GmbH"
+    account_kind = "BrokerageCashAccount"
     filename_patterns: tuple[str, ...] = ()
 
     def matches(self, data: bytes) -> bool:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+from collections import OrderedDict
 from importlib.metadata import version
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from cashflow.connectors.registry import load_registry
+from cashflow.db import connect
 from cashflow.service.api import router
 from cashflow.utils.config import get_settings
 
@@ -19,8 +21,12 @@ UI_ASSETS_DIR = UI_DIR / "assets"
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.connectors = load_registry(get_settings().connectors_dir)
+    settings = get_settings()
+    app.state.connectors = load_registry(settings.connectors_dir)
+    app.state.sessions = connect(settings.database_path)
+    app.state.previews = OrderedDict()
     yield
+    app.state.sessions.kw["bind"].dispose()
 
 
 def _add_cache_headers(request: Request, response: Response) -> None:

@@ -15,6 +15,7 @@
   }
 
   CashflowTabs.init();
+  CashflowAccounts.init();
   CashflowImport.init();
   checkConnection();
 })();

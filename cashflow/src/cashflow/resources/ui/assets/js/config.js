@@ -10,7 +10,8 @@ const CashflowConfig = (function () {
   return {
     HEALTH_ENDPOINT: `${API_BASE}/health`,
     CONNECTORS_ENDPOINT: `${API_BASE}/connectors`,
-    PARSE_ENDPOINT: `${API_BASE}/parse`,
+    IMPORTS_ENDPOINT: `${API_BASE}/imports`,
+    ACCOUNTS_ENDPOINT: `${API_BASE}/accounts`,
     DEFAULT_VIEW: "import",
     LOCALE: "de-DE",
   };

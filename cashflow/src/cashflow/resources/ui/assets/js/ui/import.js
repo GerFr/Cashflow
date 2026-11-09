@@ -1,12 +1,19 @@
 /**
  * Cashflow UI - import view
  * -------------------------
- * Drop or choose a bank export, send it to POST /api/parse and show what the
- * connector read. All values are written with textContent (never innerHTML),
- * because they come straight from the file.
+ * Drop or choose a bank export → "Check file" sends it to POST /api/imports and
+ * shows what the import would do (new, already imported, pending replaced) →
+ * "Import" commits the preview. Values from the file are written with
+ * textContent only (never innerHTML).
  */
 const CashflowImport = (function () {
+  const STATE_LABELS = {
+    new: "new",
+    duplicate: "already imported",
+    replaces_pending: "replaces pending",
+  };
   let selectedFile = null;
+  let preview = null;
 
   function element(id) {
     return document.getElementById(id);
@@ -23,7 +30,8 @@ const CashflowImport = (function () {
     const label = element("file-name");
     label.textContent = selectedFile ? selectedFile.name : "";
     label.hidden = !selectedFile;
-    element("parse").disabled = !selectedFile;
+    element("check").disabled = !selectedFile;
+    element("import-result").hidden = true;
     showError("");
   }
 
@@ -34,44 +42,93 @@ const CashflowImport = (function () {
     row.appendChild(td);
   }
 
-  function renderResult(result) {
-    element("result-connector").textContent = `${result.connector.id} ${result.connector.version}`;
-    element("result-accounts").textContent = result.accounts.join(", ") || "-";
-    element("result-count").textContent = String(result.transactions.length);
-    element("result-skipped").textContent = String(result.skipped_rows.length);
+  function chip(list, text, tone) {
+    const li = document.createElement("li");
+    li.className = `chip chip-${tone}`;
+    li.textContent = text;
+    list.appendChild(li);
+  }
+
+  function writes(counts) {
+    return counts.new + counts.replaces_pending + counts.removes_pending;
+  }
+
+  function renderPreview(result) {
+    preview = result;
+    element("result-connector").textContent = result.connector.name;
+    element("result-accounts").textContent =
+      [...new Set(result.transactions.map((tx) => tx.account_iban || tx.account_external_id))].join(", ") || "-";
     const balance = result.balances[0];
     element("result-balance").textContent = balance
       ? `${CashflowFormat.money(balance.balance, "EUR")} on ${CashflowFormat.date(balance.date)}`
       : "-";
 
+    const counts = result.counts;
+    const list = element("result-counts");
+    list.replaceChildren();
+    chip(list, `${counts.new} new`, counts.new ? "accent" : "neutral");
+    chip(list, `${counts.duplicate} already imported`, "neutral");
+    if (counts.replaces_pending) chip(list, `${counts.replaces_pending} pending → booked`, "accent");
+    if (counts.removes_pending) chip(list, `${counts.removes_pending} outdated pending removed`, "warning");
+
+    const notes = [];
+    if (result.new_accounts.length) notes.push(`New account: ${result.new_accounts.join(", ")}.`);
+    if (result.already_imported) notes.push("This exact file was imported before.");
+    const notice = element("result-notice");
+    notice.textContent = notes.join(" ");
+    notice.hidden = !notes.length;
+
+    const button = element("commit");
+    button.textContent = writes(counts) ? `Import ${writes(counts)} changes` : "Save balances only";
+    button.disabled = false;
+    element("import-done").hidden = true;
+
     const body = element("result-rows");
     body.replaceChildren();
     result.transactions.forEach((tx) => {
       const row = document.createElement("tr");
-      if (tx.status === "pending") row.className = "pending";
+      row.className = [tx.status === "pending" ? "pending" : "", tx.state === "duplicate" ? "duplicate" : ""].join(" ");
       cell(row, CashflowFormat.date(tx.booking_date));
       cell(row, tx.counterparty_name || "-");
       cell(row, tx.remittance_information || tx.booking_text || "-");
-      cell(row, tx.status);
+      cell(row, tx.status === "pending" ? `${STATE_LABELS[tx.state]} (pending)` : STATE_LABELS[tx.state]);
       cell(row, CashflowFormat.money(tx.amount, tx.currency, tx.direction), `num ${tx.direction}`);
       body.appendChild(row);
     });
     element("import-result").hidden = false;
   }
 
-  async function submit(event) {
+  async function check(event) {
     event.preventDefault();
     if (!selectedFile) return;
-    const button = element("parse");
+    const button = element("check");
     button.disabled = true;
     showError("");
     try {
-      renderResult(await CashflowAPI.parseFile(selectedFile, element("connector").value));
+      renderPreview(await CashflowAPI.previewImport(selectedFile, element("connector").value));
     } catch (error) {
       element("import-result").hidden = true;
       showError(error.message);
     } finally {
       button.disabled = false;
+    }
+  }
+
+  async function commit() {
+    if (!preview) return;
+    const button = element("commit");
+    button.disabled = true;
+    showError("");
+    try {
+      const run = await CashflowAPI.commitImport(preview.id);
+      preview = null;
+      const done = element("import-done");
+      done.textContent = `Imported: ${run.new} new, ${run.replaced_pending} pending booked, ${run.duplicate} already there.`;
+      done.hidden = false;
+      CashflowAccounts.refresh();
+    } catch (error) {
+      button.disabled = false;
+      showError(error.message);
     }
   }
 
@@ -106,7 +163,8 @@ const CashflowImport = (function () {
       event.preventDefault();
       selectFile(event.dataTransfer.files[0]);
     });
-    element("import-form").addEventListener("submit", submit);
+    element("import-form").addEventListener("submit", check);
+    element("commit").addEventListener("click", commit);
     loadConnectors();
   }
 

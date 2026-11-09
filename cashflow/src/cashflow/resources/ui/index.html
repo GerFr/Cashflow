@@ -22,6 +22,7 @@
       <button class="tab" role="tab" data-view="movements" aria-controls="view-movements">Movements</button>
       <button class="tab" role="tab" data-view="bubbles" aria-controls="view-bubbles">Bubbles</button>
       <button class="tab" role="tab" data-view="trends" aria-controls="view-trends">Trends</button>
+      <button class="tab" role="tab" data-view="accounts" aria-controls="view-accounts">Accounts</button>
       <button class="tab" role="tab" data-view="import" aria-controls="view-import">Import</button>
       <button class="tab" role="tab" data-view="inbox" aria-controls="view-inbox">Inbox</button>
     </nav>
@@ -42,11 +43,36 @@
       <p class="placeholder">Uncategorised and uncertain transactions to confirm — coming in P2.</p>
     </section>
 
+    <section id="view-accounts" class="view" role="tabpanel" hidden>
+      <div class="card">
+        <div class="total">
+          <span class="muted">Liquid accounts, latest known balances</span>
+          <span id="accounts-total" class="total-value">-</span>
+        </div>
+        <p id="accounts-empty" class="placeholder" hidden>No accounts yet. Import a bank export first.</p>
+        <p id="accounts-error" class="message message-error" role="alert" hidden></p>
+        <div class="table-wrap">
+          <table id="accounts-table" hidden>
+            <thead>
+              <tr>
+                <th scope="col">Account</th>
+                <th scope="col">Type</th>
+                <th scope="col" class="num">Balance</th>
+                <th scope="col">Liquid</th>
+                <th scope="col">Opening balance</th>
+              </tr>
+            </thead>
+            <tbody id="accounts-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <section id="view-import" class="view" role="tabpanel" hidden>
       <form id="import-form" class="card" novalidate>
         <label id="drop-zone" class="drop-zone" for="file">
           <span class="drop-title">Drop a bank export here</span>
-          <span class="hint">or click to choose a file (CSV, or a Trade Republic PDF statement). It is parsed by the local service; nothing is stored yet.</span>
+          <span class="hint">or click to choose a file (CSV, or a Trade Republic PDF statement). You see a preview before anything is saved.</span>
           <span id="file-name" class="file-name" hidden></span>
         </label>
         <input id="file" name="file" type="file" accept=".csv,.txt,.pdf,text/csv,application/pdf" class="visually-hidden">
@@ -59,17 +85,21 @@
         </div>
 
         <p id="import-error" class="message message-error" role="alert" hidden></p>
-        <button id="parse" class="button button-primary" type="submit" disabled>Parse</button>
+        <button id="check" class="button button-primary" type="submit" disabled>Check file</button>
       </form>
 
       <div id="import-result" class="card" hidden>
         <dl class="facts">
           <div><dt>Format</dt><dd id="result-connector">-</dd></div>
           <div><dt>Accounts</dt><dd id="result-accounts">-</dd></div>
-          <div><dt>Transactions</dt><dd id="result-count">-</dd></div>
-          <div><dt>Skipped rows</dt><dd id="result-skipped">-</dd></div>
           <div><dt>Closing balance</dt><dd id="result-balance">-</dd></div>
         </dl>
+        <ul id="result-counts" class="chips" aria-label="What the import will do"></ul>
+        <p id="result-notice" class="hint" hidden></p>
+        <div class="actions">
+          <button id="commit" class="button button-primary" type="button">Import</button>
+          <span id="import-done" class="message message-success" role="status" hidden></span>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -77,7 +107,7 @@
                 <th scope="col">Booked</th>
                 <th scope="col">Counterparty</th>
                 <th scope="col">Purpose</th>
-                <th scope="col">Status</th>
+                <th scope="col">Import</th>
                 <th scope="col" class="num">Amount</th>
               </tr>
             </thead>
@@ -92,6 +122,7 @@
   <script src="/app/assets/js/api.js" defer></script>
   <script src="/app/assets/js/format.js" defer></script>
   <script src="/app/assets/js/ui/tabs.js" defer></script>
+  <script src="/app/assets/js/ui/accounts.js" defer></script>
   <script src="/app/assets/js/ui/import.js" defer></script>
   <script src="/app/assets/js/main.js" defer></script>
 </body>

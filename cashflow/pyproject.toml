@@ -1,6 +1,6 @@
 [project]
 name = "cashflow"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local personal finance service: bank exports in, net worth and money movements out"
 readme = "README.md"
 license = "AGPL-3.0-or-later"
@@ -11,6 +11,7 @@ dependencies = [
     "pydantic-settings>=2.16.2",
     "pymupdf>=2.1",
     "pyyaml>=6.0.3",
+    "sqlalchemy>=2.1.8",
     "uvicorn[standard]>=0.54.0",
 ]
 
