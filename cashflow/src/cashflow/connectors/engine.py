@@ -1,12 +1,10 @@
-"""Reference interpreter for the declarative connector DSL (dsl_version 0.1).
+"""Interpreter for the declarative connector DSL (dsl_version 0.1).
 
-This module is an *executable specification*: it defines precisely how a
-connector definition (connectors/definitions/*.yaml) turns an export file into
-canonical transaction records. CI runs it over every fixture.
-
-It becomes the import engine of the Cashflow service in P0; any later engine
-must produce identical canonical JSON for every fixture in
-``connectors/fixtures`` (the connector conformance suite).
+This module is the *executable specification* of the DSL: it defines precisely
+how a connector definition (connectors/definitions/*.yaml) turns an export file
+into canonical transaction records. Any other engine (e.g. in a phone app) must
+produce identical canonical JSON for every fixture in ``connectors/fixtures``
+(the connector conformance suite, see ``cashflow.connectors.conformance``).
 """
 
 from __future__ import annotations
@@ -19,7 +17,6 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
-from pathlib import Path
 from typing import Any
 
 ENCODINGS = {
@@ -128,6 +125,24 @@ def fingerprint_base(rec: dict[str, Any]) -> str:
         rec.get("external_id") or "",
     ]
     return "\x1f".join(parts)
+
+
+def add_record(result: ParseResult, rec: dict[str, Any], occurrences: dict[str, int], raw: str) -> None:
+    """Fingerprint a canonical record (string values) and append it to the result.
+
+    Shared by every connector, so identical rows get the same ids whatever the source format.
+    ``occurrences`` counts identical fingerprint bases within one file.
+    """
+    base = fingerprint_base(rec)
+    n = occurrences.get(base, 0)
+    occurrences[base] = n + 1
+    rec["fingerprint"] = hashlib.sha256(f"{base}\x1f{n}".encode()).hexdigest()
+    rec["id"] = str(uuid8(f"transaction:{rec['fingerprint']}"))
+    result.transactions.append({k: rec[k] for k in RECORD_FIELDS if rec.get(k) is not None})
+    result.raw_rows[rec["row_number"]] = raw
+    account = rec.get("account_iban") or rec.get("account_external_id")
+    if account and account not in result.accounts:
+        result.accounts.append(account)
 
 
 # --- Value parsing -----------------------------------------------------------------
@@ -281,19 +296,32 @@ class Interpreter:
                     break
         return out
 
-    def run(self, path: Path) -> ParseResult:
-        data = path.read_bytes()
-        result = ParseResult(self.d["id"], self.d["version"], hashlib.sha256(data).hexdigest())
+    def decode(self, data: bytes) -> tuple[str, list[tuple[int, int, list[str]]]]:
+        """Decode the file and split it into CSV records: (first line, last line, cells)."""
         inp = self.d["input"]
         text = data.decode(ENCODINGS[inp["encoding"]])
-        physical_lines = text.splitlines()
-
         reader = csv.reader(io.StringIO(text, newline=""), delimiter=inp["delimiter"], quotechar=inp.get("quote", '"'))
-        records: list[tuple[int, int, list[str]]] = []  # (first line, last line, cells)
+        records: list[tuple[int, int, list[str]]] = []
         last = 0
         for cells in reader:
             records.append((last + 1, reader.line_num, cells))
             last = reader.line_num
+        return text, records
+
+    def matches(self, data: bytes) -> bool:
+        """True if the file has this format's header with all detection columns."""
+        try:
+            _, records = self.decode(data)
+            header = {c.strip() for c in records[self.find_header(records)][2]}
+        except (UnicodeDecodeError, csv.Error, ConnectorError, IndexError):
+            return False
+        return all(c in header for c in self.d["detect"]["required_columns"])
+
+    def parse(self, data: bytes) -> ParseResult:
+        result = ParseResult(self.d["id"], self.d["version"], hashlib.sha256(data).hexdigest())
+        inp = self.d["input"]
+        text, records = self.decode(data)
+        physical_lines = text.splitlines()
 
         header_idx = self.find_header(records)
         header = [h.strip() for h in records[header_idx][2]]
@@ -313,16 +341,7 @@ class Interpreter:
                 result.skipped_rows.append(first)
                 continue
             rec = self.record(row, preamble, first)
-            base = fingerprint_base(rec)
-            n = occurrences.get(base, 0)
-            occurrences[base] = n + 1
-            rec["fingerprint"] = hashlib.sha256(f"{base}\x1f{n}".encode()).hexdigest()
-            rec["id"] = str(uuid8(f"transaction:{rec['fingerprint']}"))
-            result.transactions.append({k: rec[k] for k in RECORD_FIELDS if rec.get(k) is not None})
-            result.raw_rows[first] = "\n".join(physical_lines[first - 1 : end])
-            account = rec.get("account_iban") or rec.get("account_external_id")
-            if account and account not in result.accounts:
-                result.accounts.append(account)
+            add_record(result, rec, occurrences, "\n".join(physical_lines[first - 1 : end]))
 
         if "closing_balance" in preamble and "closing_balance_date" in preamble:
             account = preamble.get("account_iban") or (result.accounts[0] if result.accounts else None)
@@ -376,5 +395,5 @@ class Interpreter:
         return rec
 
 
-def run(definition: dict[str, Any], path: Path) -> ParseResult:
-    return Interpreter(definition).run(path)
+def parse(definition: dict[str, Any], data: bytes) -> ParseResult:
+    return Interpreter(definition).parse(data)

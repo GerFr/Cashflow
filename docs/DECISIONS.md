@@ -24,7 +24,7 @@ Short records of the big choices. To change one, add a new entry that replaces i
 
 **Context:** Bank export formats are many and change without notice.
 **Decision:** Tabular formats are described in YAML definitions interpreted by a connector engine. Each definition ships synthetic fixtures with a golden `expected.json`. The Python engine in the service runs them; a later app engine must produce the same output.
-**Consequences:** New banks without code; formats are reviewable data. Exotic formats (PDF, ZIP) need code connectors later.
+**Consequences:** New banks without code; formats are reviewable data. Formats the DSL can't describe (PDF statements such as Trade Republic's) get small code connectors behind the same interface, with the same fixture tests and their own plausibility checks.
 
 ## 5. Local AI first, cloud only as opt-in (2026-11-08)
 

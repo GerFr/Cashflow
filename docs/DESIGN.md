@@ -49,7 +49,7 @@ cashflow/                  uv project
   src/cashflow/
     app.py                 app factory; /api router, / → /app/, static UI
     run_dev.py run_prod.py
-    connectors/engine.py   connector interpreter
+    connectors/            engine.py (interpreter), registry.py (load, detect), conformance.py
     db.py                  SQLAlchemy models
     service/api.py         HTTP endpoints
     service/importer.py    import pipeline
@@ -99,7 +99,7 @@ UPPER(collapsed counterparty name) │ UPPER(collapsed remittance info) │ end-
 ## Connectors
 
 * **Declarative YAML definitions** for tabular exports: [`connectors/`](../connectors/). Data, not code: easy to review and safe to run.
-* Native parsers for open standards (camt.053, MT940) later.
+* **Code connectors** for formats the YAML can't describe, behind the same interface: so far the Trade Republic PDF statement (word positions via PyMuPDF; every row checked against the running balance, totals against the account overview). Native parsers for open standards (camt.053, MT940) later.
 * Each definition has synthetic fixtures with a golden `expected.json`; the service's tests check that the engine reproduces them.
 
 ## Data model

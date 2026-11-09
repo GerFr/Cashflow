@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Cashflow</title>
+  <link rel="stylesheet" href="/app/assets/app.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <div>
+        <h1>Cashflow</h1>
+        <p class="subtitle">Where my money is and where it goes.</p>
+      </div>
+      <span id="connection" class="badge badge-neutral">Connecting…</span>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Views">
+      <button class="tab" role="tab" data-view="networth" aria-controls="view-networth">Net worth</button>
+      <button class="tab" role="tab" data-view="movements" aria-controls="view-movements">Movements</button>
+      <button class="tab" role="tab" data-view="bubbles" aria-controls="view-bubbles">Bubbles</button>
+      <button class="tab" role="tab" data-view="trends" aria-controls="view-trends">Trends</button>
+      <button class="tab" role="tab" data-view="import" aria-controls="view-import">Import</button>
+      <button class="tab" role="tab" data-view="inbox" aria-controls="view-inbox">Inbox</button>
+    </nav>
+
+    <section id="view-networth" class="view" role="tabpanel" hidden>
+      <p class="placeholder">Liquid net worth over time, with a donut of your accounts for any date — coming in P2.</p>
+    </section>
+    <section id="view-movements" class="view" role="tabpanel" hidden>
+      <p class="placeholder">Money in and out per week, month or year, transfers greyed out — coming in P2.</p>
+    </section>
+    <section id="view-bubbles" class="view" role="tabpanel" hidden>
+      <p class="placeholder">Income, spending and saving as bubbles you can click into — coming in P2.</p>
+    </section>
+    <section id="view-trends" class="view" role="tabpanel" hidden>
+      <p class="placeholder">Long-term lines for net worth, income and spending — coming in P2.</p>
+    </section>
+    <section id="view-inbox" class="view" role="tabpanel" hidden>
+      <p class="placeholder">Uncategorised and uncertain transactions to confirm — coming in P2.</p>
+    </section>
+
+    <section id="view-import" class="view" role="tabpanel" hidden>
+      <form id="import-form" class="card" novalidate>
+        <label id="drop-zone" class="drop-zone" for="file">
+          <span class="drop-title">Drop a bank export here</span>
+          <span class="hint">or click to choose a file (CSV, or a Trade Republic PDF statement). It is parsed by the local service; nothing is stored yet.</span>
+          <span id="file-name" class="file-name" hidden></span>
+        </label>
+        <input id="file" name="file" type="file" accept=".csv,.txt,.pdf,text/csv,application/pdf" class="visually-hidden">
+
+        <div class="field">
+          <label for="connector">Format</label>
+          <select id="connector">
+            <option value="">Detect automatically</option>
+          </select>
+        </div>
+
+        <p id="import-error" class="message message-error" role="alert" hidden></p>
+        <button id="parse" class="button button-primary" type="submit" disabled>Parse</button>
+      </form>
+
+      <div id="import-result" class="card" hidden>
+        <dl class="facts">
+          <div><dt>Format</dt><dd id="result-connector">-</dd></div>
+          <div><dt>Accounts</dt><dd id="result-accounts">-</dd></div>
+          <div><dt>Transactions</dt><dd id="result-count">-</dd></div>
+          <div><dt>Skipped rows</dt><dd id="result-skipped">-</dd></div>
+          <div><dt>Closing balance</dt><dd id="result-balance">-</dd></div>
+        </dl>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Booked</th>
+                <th scope="col">Counterparty</th>
+                <th scope="col">Purpose</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="num">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="result-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app/assets/js/config.js" defer></script>
+  <script src="/app/assets/js/api.js" defer></script>
+  <script src="/app/assets/js/format.js" defer></script>
+  <script src="/app/assets/js/ui/tabs.js" defer></script>
+  <script src="/app/assets/js/ui/import.js" defer></script>
+  <script src="/app/assets/js/main.js" defer></script>
+</body>
+</html>
