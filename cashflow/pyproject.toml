@@ -1,0 +1,59 @@
+[project]
+name = "cashflow"
+version = "0.1.0"
+description = "Local personal finance service: bank exports in, net worth and money movements out"
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi>=0.162.2",
+    "jsonschema>=4.26.0",
+    "pydantic-settings>=2.16.2",
+    "pyyaml>=6.0.3",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.16.0",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.4",
+]
+
+[project.scripts]
+dev = "cashflow.run_dev:main"
+prod = "cashflow.run_prod:main"
+update-golden = "cashflow.connectors.conformance:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cashflow"]
+
+[tool.uv]
+package = true
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+pythonpath = ["test"]
+
+[tool.coverage.run]
+source = ["src/cashflow"]
+branch = true
+omit = [
+    "src/cashflow/run_dev.py",
+    "src/cashflow/run_prod.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]

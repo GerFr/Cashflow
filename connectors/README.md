@@ -22,7 +22,8 @@ A definition says how to decode the file (`input`: encoding, delimiter, header r
 
 * Annotated example: [`definitions/de.dkb.csv-2023.yaml`](definitions/de.dkb.csv-2023.yaml).
 * Every key is described in the [JSON Schema](schema/connector.schema.json); the `# yaml-language-server` line gives completion in editors.
-* The exact semantics are defined by the reference interpreter [`tools/connector_ref.py`](../tools/connector_ref.py). It becomes the service's import engine in P0; any later engine (e.g. in a phone app) must produce the same `expected.json` for every fixture.
+* The exact semantics are defined by the interpreter [`cashflow/src/cashflow/connectors/engine.py`](../cashflow/src/cashflow/connectors/engine.py), which is also the service's import engine. Any other engine (e.g. in a phone app) must produce the same `expected.json` for every fixture.
+* The format of an uploaded file is detected from its header: all `detect.required_columns` must be present; `filename_patterns` only break ties.
 
 ## The canonical record
 
@@ -42,8 +43,9 @@ Per file the result also lists the `accounts` seen, `balances` from the preamble
 4. Generate the golden file and check every value by hand:
 
    ```bash
-   python tools/validate.py --update-golden
-   git diff connectors/fixtures/
+   cd cashflow
+   uv run update-golden
+   git diff ../connectors/fixtures/
    ```
 
-5. Run `python tools/validate.py` until it passes, then open a pull request.
+5. Run `uv run pytest` until it passes (the conformance suite is `test/unit/test_connectors.py`), then open a pull request.

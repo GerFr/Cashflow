@@ -5,11 +5,10 @@
 * Run the checks before opening a pull request:
 
   ```bash
-  pip install -r tools/requirements.txt
-  python tools/validate.py
+  cd cashflow
+  uv run ruff check && uv run ruff format --check
+  uv run pytest
   ```
-
-  From P0 on: `cd cashflow && uv run ruff check && uv run ruff format --check && uv run pytest`.
 
 * A big design change gets a short entry in [docs/DECISIONS.md](docs/DECISIONS.md).
 * Adding a bank: see [connectors/README.md](connectors/README.md).

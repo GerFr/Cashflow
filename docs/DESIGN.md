@@ -49,7 +49,7 @@ cashflow/                  uv project
   src/cashflow/
     app.py                 app factory; /api router, / → /app/, static UI
     run_dev.py run_prod.py
-    connectors/engine.py   connector interpreter
+    connectors/            engine.py (interpreter), registry.py (load, detect), conformance.py
     db.py                  SQLAlchemy models
     service/api.py         HTTP endpoints
     service/importer.py    import pipeline
