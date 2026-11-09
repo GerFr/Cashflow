@@ -13,8 +13,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from cashflow.connectors.engine import parse
-from cashflow.connectors.registry import load_registry
+from cashflow.connectors.registry import Connector, load_registry
 from cashflow.utils.config import get_settings
 
 
@@ -29,20 +28,20 @@ def fixture_input(case: Path) -> Path:
     return inputs[0]
 
 
-def actual_output(definition: dict[str, Any], case: Path) -> dict[str, Any]:
-    return parse(definition, fixture_input(case).read_bytes()).to_json()
+def actual_output(connector: Connector, case: Path) -> dict[str, Any]:
+    return connector.parse(fixture_input(case).read_bytes()).to_json()
 
 
-def write_golden(definition: dict[str, Any], case: Path) -> None:
-    text = json.dumps(actual_output(definition, case), indent=2, ensure_ascii=False) + "\n"
+def write_golden(connector: Connector, case: Path) -> None:
+    text = json.dumps(actual_output(connector, case), indent=2, ensure_ascii=False) + "\n"
     (case / "expected.json").write_text(text, encoding="utf-8")
 
 
 def main() -> None:
     connectors_dir = get_settings().connectors_dir
-    for connector_id, definition in load_registry(connectors_dir).definitions.items():
+    for connector_id, connector in load_registry(connectors_dir).connectors.items():
         for case in fixture_cases(connectors_dir, connector_id):
-            write_golden(definition, case)
+            write_golden(connector, case)
             print(f"{connector_id}/{case.name}: expected.json written")
 
 

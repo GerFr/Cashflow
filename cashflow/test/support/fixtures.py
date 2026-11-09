@@ -13,9 +13,7 @@ REGISTRY = load_registry(CONNECTORS_DIR)
 
 # (connector id, fixture case directory) for every golden fixture
 CASES: list[tuple[str, Path]] = [
-    (connector_id, case)
-    for connector_id in REGISTRY.definitions
-    for case in fixture_cases(CONNECTORS_DIR, connector_id)
+    (connector_id, case) for connector_id in REGISTRY.connectors for case in fixture_cases(CONNECTORS_DIR, connector_id)
 ]
 
 

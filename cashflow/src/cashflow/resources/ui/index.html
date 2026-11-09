@@ -46,10 +46,10 @@
       <form id="import-form" class="card" novalidate>
         <label id="drop-zone" class="drop-zone" for="file">
           <span class="drop-title">Drop a bank export here</span>
-          <span class="hint">or click to choose a file (CSV). It is parsed by the local service; nothing is stored yet.</span>
+          <span class="hint">or click to choose a file (CSV, or a Trade Republic PDF statement). It is parsed by the local service; nothing is stored yet.</span>
           <span id="file-name" class="file-name" hidden></span>
         </label>
-        <input id="file" name="file" type="file" accept=".csv,.txt,text/csv" class="visually-hidden">
+        <input id="file" name="file" type="file" accept=".csv,.txt,.pdf,text/csv,application/pdf" class="visually-hidden">
 
         <div class="field">
           <label for="connector">Format</label>

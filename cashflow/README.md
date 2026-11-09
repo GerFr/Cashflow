@@ -52,7 +52,7 @@ Plain HTML, CSS and JavaScript in `src/cashflow/resources/ui/`, served by FastAP
 |---|---|---|
 | GET | `/api/health` | `{status, version, connectors}` |
 | GET | `/api/connectors` | `[{id, name, version, status, institution}]` |
-| POST | `/api/parse` | raw file bytes + URL-encoded `X-Filename` header; optional `?connector=<id>` → canonical parse result (same shape as the fixtures' `expected.json`). `400` bad filename, `404` unknown connector, `413` larger than 20 MB, `422` not recognised or malformed |
+| POST | `/api/parse` | raw file bytes (CSV, or a Trade Republic PDF statement) + URL-encoded `X-Filename` header; optional `?connector=<id>` → canonical parse result (same shape as the fixtures' `expected.json`). `400` bad filename, `404` unknown connector, `413` larger than 20 MB, `422` not recognised or malformed |
 
 `curl` example:
 
@@ -69,6 +69,7 @@ uv run ruff check && uv run ruff format --check
 
 * `test/unit/test_connectors.py` is the connector conformance suite: every definition must be valid against the JSON Schema and reproduce each fixture's `expected.json`.
 * `test/e2e/` drives the API and the static UI through FastAPI's `TestClient`.
+* `test/support/traderepublic.py` builds synthetic Trade Republic statements; `uv run python test/support/traderepublic.py` rewrites the PDF fixture.
 
 After changing a connector definition, regenerate its golden files and review every changed value:
 

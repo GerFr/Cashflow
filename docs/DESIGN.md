@@ -99,7 +99,7 @@ UPPER(collapsed counterparty name) │ UPPER(collapsed remittance info) │ end-
 ## Connectors
 
 * **Declarative YAML definitions** for tabular exports: [`connectors/`](../connectors/). Data, not code: easy to review and safe to run.
-* Native parsers for open standards (camt.053, MT940) later.
+* **Code connectors** for formats the YAML can't describe, behind the same interface: so far the Trade Republic PDF statement (word positions via PyMuPDF; every row checked against the running balance, totals against the account overview). Native parsers for open standards (camt.053, MT940) later.
 * Each definition has synthetic fixtures with a golden `expected.json`; the service's tests check that the engine reproduces them.
 
 ## Data model

@@ -127,6 +127,24 @@ def fingerprint_base(rec: dict[str, Any]) -> str:
     return "\x1f".join(parts)
 
 
+def add_record(result: ParseResult, rec: dict[str, Any], occurrences: dict[str, int], raw: str) -> None:
+    """Fingerprint a canonical record (string values) and append it to the result.
+
+    Shared by every connector, so identical rows get the same ids whatever the source format.
+    ``occurrences`` counts identical fingerprint bases within one file.
+    """
+    base = fingerprint_base(rec)
+    n = occurrences.get(base, 0)
+    occurrences[base] = n + 1
+    rec["fingerprint"] = hashlib.sha256(f"{base}\x1f{n}".encode()).hexdigest()
+    rec["id"] = str(uuid8(f"transaction:{rec['fingerprint']}"))
+    result.transactions.append({k: rec[k] for k in RECORD_FIELDS if rec.get(k) is not None})
+    result.raw_rows[rec["row_number"]] = raw
+    account = rec.get("account_iban") or rec.get("account_external_id")
+    if account and account not in result.accounts:
+        result.accounts.append(account)
+
+
 # --- Value parsing -----------------------------------------------------------------
 
 
@@ -323,16 +341,7 @@ class Interpreter:
                 result.skipped_rows.append(first)
                 continue
             rec = self.record(row, preamble, first)
-            base = fingerprint_base(rec)
-            n = occurrences.get(base, 0)
-            occurrences[base] = n + 1
-            rec["fingerprint"] = hashlib.sha256(f"{base}\x1f{n}".encode()).hexdigest()
-            rec["id"] = str(uuid8(f"transaction:{rec['fingerprint']}"))
-            result.transactions.append({k: rec[k] for k in RECORD_FIELDS if rec.get(k) is not None})
-            result.raw_rows[first] = "\n".join(physical_lines[first - 1 : end])
-            account = rec.get("account_iban") or rec.get("account_external_id")
-            if account and account not in result.accounts:
-                result.accounts.append(account)
+            add_record(result, rec, occurrences, "\n".join(physical_lines[first - 1 : end]))
 
         if "closing_balance" in preamble and "closing_balance_date" in preamble:
             account = preamble.get("account_iban") or (result.accounts[0] if result.accounts else None)

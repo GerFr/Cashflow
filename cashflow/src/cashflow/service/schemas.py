@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any
-
 from pydantic import BaseModel
+
+from cashflow.connectors.registry import Connector
 
 
 class Health(BaseModel):
@@ -19,11 +19,11 @@ class ConnectorInfo(BaseModel):
     institution: str
 
     @classmethod
-    def from_definition(cls, definition: dict[str, Any]) -> ConnectorInfo:
+    def from_connector(cls, connector: Connector) -> ConnectorInfo:
         return cls(
-            id=definition["id"],
-            name=definition["name"],
-            version=definition["version"],
-            status=definition["status"],
-            institution=definition["institution"]["name"],
+            id=connector.id,
+            name=connector.name,
+            version=connector.version,
+            status=connector.status,
+            institution=connector.institution,
         )

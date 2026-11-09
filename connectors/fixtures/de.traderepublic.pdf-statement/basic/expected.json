@@ -1,0 +1,154 @@
+{
+  "connector": {
+    "id": "de.traderepublic.pdf-statement",
+    "version": "0.1.0"
+  },
+  "file_sha256": "0e35add91d0a0fccf252436f1e62318cd1c2f53fca378f21f3858606b84abf87",
+  "accounts": [
+    "DE02100100100006820101"
+  ],
+  "balances": [
+    {
+      "account": "DE02100100100006820101",
+      "date": "2026-11-08",
+      "balance": "882.78"
+    }
+  ],
+  "skipped_rows": [],
+  "transactions": [
+    {
+      "id": "6f2ff068-ec14-871f-8e76-53df5417a2c0",
+      "fingerprint": "4e2f47bc0f68f11c21c45c8a893fc78f0d8a3c87d3a9911651e4d65c889d0134",
+      "row_number": 1,
+      "account_iban": "DE02100100100006820101",
+      "booking_date": "2026-08-01",
+      "direction": "credit",
+      "amount": "1500.00",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Max Mustermann",
+      "remittance_information": "Incoming transfer from Max Mustermann",
+      "booking_text": "Überweisung"
+    },
+    {
+      "id": "ff61056a-30a1-8754-bde3-a1a7dd4538d5",
+      "fingerprint": "6320f53842daff6870755e16454852b2b70bc0c9cc44dd74cc1dbf57a3e368da",
+      "row_number": 2,
+      "account_iban": "DE02100100100006820101",
+      "booking_date": "2026-08-02",
+      "direction": "debit",
+      "amount": "3.20",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Kornblume Backstube",
+      "remittance_information": "Kornblume Backstube",
+      "booking_text": "Kartentransaktion"
+    },
+    {
+      "id": "1d9a14be-c9d1-8bd3-9e24-1c24bed75614",
+      "fingerprint": "47ef0e1499284aa50d8a72a69cf2567930c9babfe4b97511fe9100c3143745c5",
+      "row_number": 3,
+      "account_iban": "DE02100100100006820101",
+      "booking_date": "2026-08-02",
+      "direction": "debit",
+      "amount": "3.20",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Kornblume Backstube",
+      "remittance_information": "Kornblume Backstube",
+      "booking_text": "Kartentransaktion"
+    },
+    {
+      "id": "297e948c-4f5c-8b88-bf3a-ffb92ed8f38e",
+      "fingerprint": "24afa5d129e19dbde6084813cccc893fafa3fdd8541523eba4954b26b3a12c97",
+      "row_number": 4,
+      "account_iban": "DE02100100100006820101",
+      "booking_date": "2026-08-04",
+      "direction": "debit",
+      "amount": "500.00",
+      "currency": "EUR",
+      "status": "booked",
+      "remittance_information": "Ausführung Handel Direktkauf Kauf IE00B4L5Y983 MUSTER-CORE MSCI WORLD 1234567890 KW",
+      "booking_text": "Handel"
+    },
+    {
+      "id": "ccdd67c3-26b0-858d-8c33-557d452879c1",
+      "fingerprint": "7a1745738dfdeceeaffda4a17063c8ba45ab8c53d8cebb5c0b987889379637e8",
+      "row_number": 5,
+      "account_iban": "DE02100100100006820101",
+      "booking_date": "2026-08-03",
+      "direction": "credit",
+      "amount": "1.23",
+      "currency": "EUR",
+      "status": "booked",
+      "remittance_information": "Your interest payment",
+      "booking_text": "Zinsen"
+    },
+    {
+      "id": "c8906436-1266-8d2e-ba68-2cd024d549c2",
+      "fingerprint": "14a9fc5dd960fcae3fcbd7ce72eb3bd3868d06843713746637d5a59d3e20e418",
+      "row_number": 6,
+      "account_iban": "DE02100100100006820101",
+      "booking_date": "2026-09-01",
+      "direction": "debit",
+      "amount": "45.00",
+      "currency": "EUR",
+      "status": "booked",
+      "remittance_information": "Sepa Direct Debit transfer to Musterstrom GmbH",
+      "booking_text": "SEPA-Lastschrift"
+    },
+    {
+      "id": "a982de4a-459a-8aff-a3be-d348a88bbb85",
+      "fingerprint": "f25bf03e9d72eb1148519dfc6f87534493548ff59fa647b4254b49b77cf8e5e8",
+      "row_number": 7,
+      "account_iban": "DE02100100100006820101",
+      "booking_date": "2026-09-15",
+      "direction": "debit",
+      "amount": "120.00",
+      "currency": "EUR",
+      "status": "booked",
+      "counterparty_name": "Erika Musterfrau",
+      "remittance_information": "Outgoing transfer for Erika Musterfrau",
+      "booking_text": "Überweisung"
+    },
+    {
+      "id": "d4fc719d-e98f-8af4-9c81-6e2aa1e3291d",
+      "fingerprint": "0c1be02767d7b126b414ef1dd2fe5391a8c4711df1b65b56de217239bf1bdb69",
+      "row_number": 8,
+      "account_iban": "DE02100100100006820101",
+      "booking_date": "2026-10-01",
+      "direction": "credit",
+      "amount": "2.10",
+      "currency": "EUR",
+      "status": "booked",
+      "remittance_information": "Cash Dividend for ISIN IE00B4L5Y983",
+      "booking_text": "Ertrag"
+    },
+    {
+      "id": "8cb00121-4913-8c4b-88b1-a08743274df9",
+      "fingerprint": "bc3f7db67c4c2bef665fc02dcaa521fe23a6e038af2a5eb0fa566d288db28e05",
+      "row_number": 9,
+      "account_iban": "DE02100100100006820101",
+      "booking_date": "2026-11-01",
+      "direction": "credit",
+      "amount": "0.85",
+      "currency": "EUR",
+      "status": "booked",
+      "remittance_information": "Your interest payment",
+      "booking_text": "Zinsen"
+    },
+    {
+      "id": "889f78b8-27be-83fd-a245-df19b1e8f222",
+      "fingerprint": "41cc4bff58a198439e04a848439de5233f4fd628f4de0a32382bbd55f908b4ff",
+      "row_number": 10,
+      "account_iban": "DE02100100100006820101",
+      "booking_date": "2026-11-05",
+      "direction": "credit",
+      "amount": "50.00",
+      "currency": "EUR",
+      "status": "booked",
+      "remittance_information": "Einzahlung akzeptiert: DE89370400440532013000 auf DE02100100100006820101",
+      "booking_text": "Überweisung"
+    }
+  ]
+}

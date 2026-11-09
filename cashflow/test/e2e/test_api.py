@@ -24,7 +24,7 @@ def test_connectors_lists_every_definition(client):
     response = client.get("/api/connectors")
     assert response.status_code == 200
     ids = {c["id"] for c in response.json()}
-    assert ids == set(client.app.state.connectors.definitions)
+    assert ids == set(client.app.state.connectors.connectors)
     assert all(c["institution"] and c["status"] for c in response.json())
 
 
